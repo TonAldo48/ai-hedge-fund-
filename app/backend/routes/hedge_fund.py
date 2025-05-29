@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import asyncio
 
@@ -6,6 +6,7 @@ from app.backend.models.schemas import ErrorResponse, HedgeFundRequest
 from app.backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEvent, CompleteEvent
 from app.backend.services.graph import create_graph, parse_hedge_fund_response, run_graph_async
 from app.backend.services.portfolio import create_portfolio
+from app.backend.middleware.auth import verify_api_key, verify_api_key_optional
 from src.utils.progress import progress
 from src.utils.analysts import ANALYST_ORDER
 from src.llm.models import LLM_ORDER, ModelProvider
@@ -14,7 +15,9 @@ router = APIRouter(prefix="/hedge-fund")
 
 
 @router.get("/agents")
-async def get_available_agents():
+async def get_available_agents(
+    _: str = Depends(verify_api_key_optional)  # Optional auth - allows public access
+):
     """Get list of available AI agents/analysts."""
     return {
         "agents": [
@@ -25,7 +28,9 @@ async def get_available_agents():
 
 
 @router.get("/models")
-async def get_available_models():
+async def get_available_models(
+    _: str = Depends(verify_api_key_optional)  # Optional auth - allows public access
+):
     """Get list of available LLM models."""
     return {
         "models": [
@@ -40,8 +45,15 @@ async def get_available_models():
 
 
 @router.post("/run-sync")
-async def run_hedge_fund_sync(request: HedgeFundRequest):
-    """Synchronous endpoint for running hedge fund analysis - easier for Postman testing."""
+async def run_hedge_fund_sync(
+    request: HedgeFundRequest,
+    api_key: str = Depends(verify_api_key)  # Requires valid API key
+):
+    """
+    Synchronous endpoint for running hedge fund analysis - easier for Postman testing.
+    
+    **Authentication Required**: This endpoint requires a valid API key.
+    """
     try:
         # Create the portfolio
         portfolio = create_portfolio(request.initial_cash, request.margin_requirement, request.tickers)
@@ -79,7 +91,8 @@ async def run_hedge_fund_sync(request: HedgeFundRequest):
                 "start_date": request.get_start_date(),
                 "end_date": request.end_date,
                 "model": f"{request.model_provider.value}:{request.model_name}",
-                "selected_agents": request.selected_agents
+                "selected_agents": request.selected_agents,
+                "authenticated": True
             }
         }
 
@@ -94,10 +107,19 @@ async def run_hedge_fund_sync(request: HedgeFundRequest):
     responses={
         200: {"description": "Successful response with streaming updates"},
         400: {"model": ErrorResponse, "description": "Invalid request parameters"},
+        401: {"model": ErrorResponse, "description": "Authentication required"},
         500: {"model": ErrorResponse, "description": "Internal server error"},
     },
 )
-async def run_hedge_fund(request: HedgeFundRequest):
+async def run_hedge_fund(
+    request: HedgeFundRequest,
+    api_key: str = Depends(verify_api_key)  # Requires valid API key
+):
+    """
+    Streaming endpoint for running hedge fund analysis with real-time updates.
+    
+    **Authentication Required**: This endpoint requires a valid API key.
+    """
     try:
         # Create the portfolio
         portfolio = create_portfolio(request.initial_cash, request.margin_requirement, request.tickers)
@@ -166,6 +188,7 @@ async def run_hedge_fund(request: HedgeFundRequest):
                     data={
                         "decisions": parse_hedge_fund_response(result.get("messages", [])[-1].content),
                         "analyst_signals": result.get("data", {}).get("analyst_signals", {}),
+                        "authenticated": True
                     }
                 )
                 yield final_data.to_sse()

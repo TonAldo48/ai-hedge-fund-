@@ -12,4 +12,5 @@ restartPolicyMaxRetries = 3
 PORT = "8000"
 ENVIRONMENT = "production"
 HOST = "0.0.0.0"
-PYTHONUNBUFFERED = "1" 
+PYTHONUNBUFFERED = "1"
+# API_KEY = "your-generated-api-key-here" # Set this in Railway dashboard 
