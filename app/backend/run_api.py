@@ -5,7 +5,13 @@ This allows the API to be run independently of the CLI application.
 """
 import uvicorn
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
+
+# Add parent directory to path so we can import from 'src'
+parent_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(parent_dir))
 
 # Load environment variables
 load_dotenv()
@@ -28,8 +34,9 @@ if __name__ == "__main__":
     print(f"   API docs: http://{host}:{port}/docs")
     
     # Run the FastAPI application
+    # Use relative import when running from app/ directory
     uvicorn.run(
-        "app.backend.main:app",
+        "backend.main:app",
         host=host,
         port=port,
         reload=reload,

@@ -8,13 +8,17 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+import urllib3
 
 # Load environment variables
 load_dotenv()
 
 # Configuration
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://api.aeero.io"
 API_KEY = os.getenv("API_KEY") or os.getenv("HEDGE_FUND_API_KEY")
+
+# Disable SSL warnings for now due to certificate propagation
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def test_public_endpoints():
     """Test endpoints that don't require authentication."""
@@ -22,20 +26,20 @@ def test_public_endpoints():
     print("=" * 60)
     
     # Health check
-    response = requests.get(f"{BASE_URL}/health")
+    response = requests.get(f"{BASE_URL}/health", verify=False)
     print(f"Health Check: {response.status_code} - {response.json()}")
     
     # Root endpoint
-    response = requests.get(f"{BASE_URL}/")
+    response = requests.get(f"{BASE_URL}/", verify=False)
     print(f"Root: {response.status_code} - API info received")
     
     # Get agents
-    response = requests.get(f"{BASE_URL}/hedge-fund/agents")
+    response = requests.get(f"{BASE_URL}/hedge-fund/agents", verify=False)
     agents = response.json()
     print(f"Agents: {response.status_code} - {len(agents['agents'])} agents available")
     
     # Get models
-    response = requests.get(f"{BASE_URL}/hedge-fund/models")
+    response = requests.get(f"{BASE_URL}/hedge-fund/models", verify=False)
     models = response.json()
     print(f"Models: {response.status_code} - {len(models['models'])} models available")
     print()
@@ -47,7 +51,7 @@ def test_protected_endpoints_without_auth():
     print("=" * 70)
     
     # Test sync endpoint without auth
-    response = requests.post(f"{BASE_URL}/hedge-fund/run-sync", json={
+    response = requests.post(f"{BASE_URL}/hedge-fund/run-sync", verify=False, json={
         "tickers": ["AAPL"],
         "selected_agents": ["warren_buffett"],
         "model_name": "gpt-4o-mini",
@@ -56,7 +60,7 @@ def test_protected_endpoints_without_auth():
     print(f"Sync Endpoint (no auth): {response.status_code} - {response.json().get('detail', 'Unknown error')}")
     
     # Test streaming endpoint without auth
-    response = requests.post(f"{BASE_URL}/hedge-fund/run", json={
+    response = requests.post(f"{BASE_URL}/hedge-fund/run", verify=False, json={
         "tickers": ["AAPL"],
         "selected_agents": ["warren_buffett"],
         "model_name": "gpt-4o-mini",
@@ -81,6 +85,7 @@ def test_protected_endpoints_with_header_auth():
     # Test sync endpoint with header auth
     response = requests.post(f"{BASE_URL}/hedge-fund/run-sync", 
         headers=headers,
+        verify=False,
         json={
             "tickers": ["AAPL"],
             "selected_agents": ["warren_buffett"],
@@ -117,6 +122,7 @@ def test_protected_endpoints_with_bearer_auth():
     # Test sync endpoint with bearer auth
     response = requests.post(f"{BASE_URL}/hedge-fund/run-sync", 
         headers=headers,
+        verify=False,
         json={
             "tickers": ["MSFT"],
             "selected_agents": ["technical_analyst"],
@@ -148,6 +154,7 @@ def test_invalid_api_key():
     
     response = requests.post(f"{BASE_URL}/hedge-fund/run-sync", 
         headers=headers,
+        verify=False,
         json={
             "tickers": ["AAPL"],
             "selected_agents": ["warren_buffett"],

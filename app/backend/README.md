@@ -1,163 +1,241 @@
-# AI Hedge Fund API Backend
+# 🚀 AI Hedge Fund Backend API
 
-This is the FastAPI backend that exposes the AI Hedge Fund functionality as a REST API.
+A FastAPI-based backend for AI-powered hedge fund analysis and backtesting with real-time streaming capabilities.
 
-## Quick Start
+## 🌟 Features
 
-### 1. Install Dependencies
+- **🤖 AI-Powered Analysis**: Multiple AI analyst agents (Warren Buffett, Michael Burry, etc.)
+- **📊 Real-time Backtesting**: Stream live backtest updates via Server-Sent Events
+- **🔐 Production Authentication**: API key-based security
+- **⚡ High Performance**: Async/await with FastAPI
+- **📱 CORS Support**: Ready for frontend integration
+- **🔄 Multiple LLM Support**: OpenAI, Anthropic, DeepSeek integration
 
-Make sure you have installed all dependencies:
+## 📡 API Endpoints
+
+### Core Hedge Fund Analysis
+- `POST /hedge-fund/run-sync` - Synchronous analysis
+- `POST /hedge-fund/run` - Streaming analysis
+- `GET /hedge-fund/agents` - Available AI agents
+- `GET /hedge-fund/models` - Supported LLM models
+
+### **NEW: Backtesting API** 🎯
+- `POST /backtest/start` - Start streaming backtest
+- `GET /backtest/stream/{id}` - Real-time backtest updates
+- `GET /backtest/status/{id}` - Check backtest status
+- `POST /backtest/run-sync` - Synchronous backtest
+- `DELETE /backtest/{id}` - Cancel running backtest
+
+### Utility
+- `GET /` - API information
+- `GET /health` - Health check
+
+## 🚀 Quick Start
+
+### Local Development
+
+1. **Install Dependencies**:
 ```bash
-# Using poetry (recommended)
-poetry install
-
-# Or using pip
-pip install -r requirements.txt
+pip install fastapi uvicorn python-dotenv
 ```
 
-### 2. Set Environment Variables
-
-Create a `.env` file in the project root with your API keys:
-```env
-# Required API Keys
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
-
-# Financial Data APIs
-ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
-FINANCIAL_MODELING_PREP_API_KEY=your_fmp_key
-
-# Optional
-GROQ_API_KEY=your_groq_key
-DEEPSEEK_API_KEY=your_deepseek_key
-```
-
-### 3. Run the API Server
-
+2. **Set Environment Variables**:
 ```bash
-# From project root
-python app/backend/run_api.py
-
-# Or using uvicorn directly
-uvicorn app.backend.main:app --reload --host 0.0.0.0 --port 8000
+export OPENAI_API_KEY="your-openai-key"
+export API_KEY="your-api-key"  # Optional for auth
 ```
 
-The API will be available at: http://localhost:8000
-
-### 4. Access API Documentation
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-### 5. Test with Postman
-
-1. Import the Postman collection: `app/backend/postman_collection.json`
-2. Test the endpoints:
-   - `GET /health` - Check API status
-   - `GET /hedge-fund/agents` - List available AI agents
-   - `GET /hedge-fund/models` - List available LLM models
-   - `POST /hedge-fund/run-sync` - Run analysis (synchronous)
-   - `POST /hedge-fund/run` - Run analysis (streaming)
-
-### Example Request
-
+3. **Run the Server**:
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "tickers": ["AAPL", "MSFT"],
-    "selected_agents": ["technical_analyst", "fundamental_analyst"],
-    "model_name": "gpt-4o",
-    "model_provider": "OPENAI",
-    "initial_cash": 100000
-  }'
+cd app
+python -m backend.run_api
 ```
 
-## API Endpoints
+4. **Access the API**:
+- API: http://localhost:8000
+- Docs: http://localhost:8000/docs
+- Health: http://localhost:8000/health
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | Welcome message |
-| `/health` | GET | Health check |
-| `/hedge-fund/agents` | GET | List available AI agents |
-| `/hedge-fund/models` | GET | List available LLM models |
-| `/hedge-fund/run-sync` | POST | Run analysis (synchronous) |
-| `/hedge-fund/run` | POST | Run analysis (streaming) |
+### Railway Deployment
 
-## Development
+1. **Environment Variables**:
+```bash
+OPENAI_API_KEY=your-openai-key
+API_KEY=your-hedge-fund-api-key
+ENVIRONMENT=production
+HOST=0.0.0.0
+PORT=8000
+```
 
-### Running with Docker
+2. **Start Command**:
+```bash
+cd app && python -m backend.run_api
+```
+
+## 📚 Documentation
+
+- **[Backtesting API Guide](./BACKTESTING_API_GUIDE.md)** - Complete guide for backtesting features
+- **[API Documentation](./API_DOCUMENTATION.md)** - General API reference
+- **[Quick Reference](./API_QUICK_REFERENCE.md)** - Quick command examples
+
+## 🧪 Testing
+
+Run the comprehensive test suite:
 
 ```bash
-# Build the image
-docker build -t ai-hedge-fund-api .
+cd app/backend
 
-# Run the container
-docker run -p 8000:8000 --env-file .env ai-hedge-fund-api
+# Test streaming backtest
+python tests/test_backtest_api.py
+
+# Test synchronous backtest  
+python tests/test_backtest_api.py sync
+
+# Test general API
+python tests/test_api.py
 ```
 
-### Testing
+## 🔐 Authentication
 
+The API supports two authentication methods:
+
+1. **Header Method**:
 ```bash
-# Run tests
-pytest app/backend/tests/
-
-# Run with coverage
-pytest --cov=app.backend app/backend/tests/
+curl -H "X-API-Key: your-api-key" ...
 ```
 
-## Deployment
+2. **Bearer Token**:
+```bash
+curl -H "Authorization: Bearer your-api-key" ...
+```
 
-The API is ready for deployment to:
-- **Railway**: Connect GitHub repo, auto-deploys
-- **Render**: Free tier available
-- **Google Cloud Run**: Serverless, scales to zero
-- **AWS App Runner**: Fully managed
-- **Heroku**: Easy deployment
+**Development Mode**: If no `API_KEY` environment variable is set, authentication is disabled.
 
-See `API_DOCUMENTATION.md` for detailed deployment instructions.
+## 🤖 AI Agents
 
-## Architecture
+| Agent | Strategy | Use Case |
+|-------|----------|----------|
+| `warren_buffett` | Value investing | Long-term quality stocks |
+| `peter_lynch` | Growth analysis | High-growth companies |
+| `ray_dalio` | Macro-economic | Economic trends |
+| `michael_burry` | Contrarian/Short | Market inefficiencies |
+| `cathie_wood` | Innovation focus | Disruptive technology |
+| `technical_analyst` | Technical indicators | Chart patterns |
+
+## 📊 Supported Models
+
+- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
+- **Anthropic**: claude-3-5-sonnet, claude-3-haiku
+- **DeepSeek**: deepseek-chat, deepseek-reasoner
+
+## 🌐 Frontend Integration
+
+### JavaScript Example
+```javascript
+// Start backtest
+const response = await fetch('/backtest/start', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    tickers: ['AAPL', 'MSFT'],
+    selected_agents: ['michael_burry', 'cathie_wood'],
+    start_date: '2025-05-15',
+    end_date: '2025-05-29',
+    initial_capital: 100000
+  })
+});
+
+const { backtest_id } = await response.json();
+
+// Stream updates
+const eventSource = new EventSource(`/backtest/stream/${backtest_id}`);
+eventSource.addEventListener('backtest_progress', (event) => {
+  const data = JSON.parse(event.data);
+  console.log(`Progress: ${data.progress * 100}%`);
+});
+```
+
+## 📁 Project Structure
 
 ```
 app/backend/
-├── main.py           # FastAPI app initialization
-├── run_api.py        # Standalone server script
-├── models/           # Pydantic models
-│   ├── schemas.py    # Request/response schemas
-│   └── events.py     # SSE event models
-├── routes/           # API endpoints
-│   ├── health.py     # Health check
-│   └── hedge_fund.py # Main hedge fund endpoints
-└── services/         # Business logic
-    ├── graph.py      # LangGraph integration
-    └── portfolio.py  # Portfolio management
+├── main.py                 # FastAPI app
+├── run_api.py             # Server startup script
+├── routes/                # API endpoints
+│   ├── hedge_fund.py      # Core analysis routes
+│   ├── backtester.py      # Backtesting routes
+│   └── health.py          # Utility routes
+├── services/              # Business logic
+│   ├── backtester.py      # Streaming backtester
+│   ├── graph.py           # Agent workflow
+│   └── portfolio.py       # Portfolio management
+├── models/                # Data models
+│   ├── schemas.py         # Request/response models
+│   └── events.py          # SSE event models
+├── middleware/            # API middleware
+│   └── auth.py           # Authentication
+└── tests/                # Test suite
+    ├── test_backtest_api.py
+    └── test_api.py
 ```
 
-## Troubleshooting
+## ⚡ Performance
+
+- **Async/Await**: Non-blocking request handling
+- **Thread Pool**: CPU-intensive tasks run in background
+- **SSE Streaming**: Real-time updates without polling
+- **Event Queue**: Efficient event distribution
+
+## 🔧 Configuration
+
+Key environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | OpenAI API key | Required |
+| `API_KEY` | Hedge fund API key | None (disables auth) |
+| `ENVIRONMENT` | Environment mode | development |
+| `HOST` | Server host | 0.0.0.0 |
+| `PORT` | Server port | 8000 |
+
+## 🆘 Troubleshooting
 
 ### Common Issues
 
-1. **API Keys Missing**: Ensure all required API keys are in `.env`
-2. **Port Already in Use**: Change port with `PORT=8001 python app/backend/run_api.py`
-3. **Import Errors**: Run from project root, not from `app/backend/`
-4. **CORS Issues**: Update allowed origins in `main.py` for production
+1. **Import Errors**: Ensure you're running from the `app/` directory
+2. **Authentication Failures**: Check `API_KEY` environment variable
+3. **SSE Connection Issues**: Verify CORS settings for your frontend domain
+4. **Model Errors**: Confirm `OPENAI_API_KEY` is valid
 
 ### Debug Mode
 
 Enable debug logging:
 ```bash
-LOG_LEVEL=DEBUG python app/backend/run_api.py
+export LOG_LEVEL=debug
+python -m backend.run_api
 ```
 
-## Contributing
+## 📈 Roadmap
+
+- [ ] WebSocket support for bidirectional communication
+- [ ] Multi-timeframe backtesting
+- [ ] Portfolio optimization algorithms
+- [ ] Risk management constraints
+- [ ] Custom strategy scripting
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests
+3. Add comprehensive tests
+4. Update documentation
 5. Submit a pull request
 
-## License
+## 📞 Support
 
-See LICENSE file in the project root.
+- **API Docs**: Visit `/docs` for interactive documentation
+- **Health Check**: Use `/health` to verify server status
+- **Issues**: Report bugs in the GitHub repository
