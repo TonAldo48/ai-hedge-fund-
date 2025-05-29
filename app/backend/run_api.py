@@ -34,9 +34,9 @@ if __name__ == "__main__":
     print(f"   API docs: http://{host}:{port}/docs")
     
     # Run the FastAPI application
-    # Use relative import when running from app/ directory
+    # Use absolute import path when running in production environments like Railway
     uvicorn.run(
-        "backend.main:app",
+        "app.backend.main:app",
         host=host,
         port=port,
         reload=reload,

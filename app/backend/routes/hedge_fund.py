@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import asyncio
 
-from backend.models.schemas import ErrorResponse, HedgeFundRequest
-from backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEvent, CompleteEvent
-from backend.services.graph import create_graph, parse_hedge_fund_response, run_graph_async
-from backend.services.portfolio import create_portfolio
-from backend.middleware.auth import verify_api_key, verify_api_key_optional
+from app.backend.models.schemas import ErrorResponse, HedgeFundRequest
+from app.backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEvent, CompleteEvent
+from app.backend.services.graph import create_graph, parse_hedge_fund_response, run_graph_async
+from app.backend.services.portfolio import create_portfolio
+from app.backend.middleware.auth import verify_api_key, verify_api_key_optional
 from src.utils.progress import progress
 from src.utils.analysts import ANALYST_ORDER
 from src.llm.models import LLM_ORDER, ModelProvider

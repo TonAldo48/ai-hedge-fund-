@@ -4,9 +4,9 @@ import asyncio
 from datetime import datetime
 from typing import Optional
 
-from backend.models.schemas import BacktestRequest, BacktestResult, ErrorResponse
-from backend.services.backtester import backtest_manager, run_backtest_async
-from backend.middleware.auth import verify_api_key
+from app.backend.models.schemas import BacktestRequest, BacktestResult, ErrorResponse
+from app.backend.services.backtester import backtest_manager, run_backtest_async
+from app.backend.middleware.auth import verify_api_key
 
 router = APIRouter(prefix="/backtest")
 

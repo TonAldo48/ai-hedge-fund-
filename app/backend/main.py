@@ -1,7 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+import sys
+from pathlib import Path
 
-from backend.routes import api_router
+# Add parent directory to path so we can import from 'src'
+parent_dir = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(parent_dir))
+
+from app.backend.routes import api_router
 
 # Create FastAPI app with metadata
 app = FastAPI(
