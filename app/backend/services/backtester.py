@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 
 from src.backtester import Backtester
 from src.main import run_hedge_fund
-from backend.models.schemas import BacktestRequest, BacktestResult, PortfolioSnapshot, TradingDecision, PerformanceMetrics
-from backend.models.events import (
+from app.backend.models.schemas import BacktestRequest, BacktestResult, PortfolioSnapshot, TradingDecision, PerformanceMetrics
+from app.backend.models.events import (
     BacktestStartEvent, BacktestProgressEvent, TradingEvent, 
     PortfolioUpdateEvent, PerformanceUpdateEvent, BacktestCompleteEvent
 )
