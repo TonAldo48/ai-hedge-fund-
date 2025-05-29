@@ -1,1 +1,1 @@
-web: cd /app && python -m uvicorn app.backend.main:app --host=0.0.0.0 --port=$PORT 
+web: cd /app && PYTHONPATH=/app python -m uvicorn app.backend.main:app --host=0.0.0.0 --port=$PORT 
