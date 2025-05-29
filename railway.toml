@@ -9,4 +9,7 @@ restartPolicyType = "on-failure"
 restartPolicyMaxRetries = 3
 
 [environments.production]
-PORT = "8000" 
+PORT = "8000"
+ENVIRONMENT = "production"
+HOST = "0.0.0.0"
+PYTHONUNBUFFERED = "1" 

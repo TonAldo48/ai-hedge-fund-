@@ -298,6 +298,47 @@ curl -X POST "http://localhost:8000/hedge-fund/run" \
 
 The API transforms the command-line interface into modern HTTP endpoints while preserving all functionality, including the `show_reasoning` flag for detailed AI explanations.
 
+### 🚀 Deploy to Railway (Production)
+
+Want to deploy your API to the cloud? Railway makes it easy! Your hedge fund API can be live in minutes.
+
+#### Quick Deployment
+1. **Sign up** at [railway.app](https://railway.app)
+2. **Connect your GitHub repository**
+3. **Set environment variables** (API keys)
+4. **Deploy!** ✨
+
+#### Deployment Files Included
+- `Dockerfile.api` - Production-optimized container
+- `railway.toml` - Railway configuration
+- `RAILWAY_DEPLOYMENT.md` - Complete deployment guide
+
+#### One-Click Setup
+```bash
+# Run the deployment helper
+./deploy_railway.sh
+```
+
+#### After Deployment
+Your API will be available at:
+- **API**: `https://your-app-name.railway.app`
+- **Health Check**: `https://your-app-name.railway.app/health`
+- **Documentation**: `https://your-app-name.railway.app/docs`
+
+**Example Production Usage:**
+```bash
+curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["AAPL"],
+    "selected_agents": ["warren_buffett"],
+    "model_name": "gpt-4o-mini",
+    "model_provider": "OpenAI"
+  }'
+```
+
+See the complete [Railway Deployment Guide](./RAILWAY_DEPLOYMENT.md) for detailed instructions, security setup, monitoring, and troubleshooting.
+
 ## Project Structure 
 ```
 ai-hedge-fund/
