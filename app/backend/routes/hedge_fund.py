@@ -7,8 +7,86 @@ from app.backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEven
 from app.backend.services.graph import create_graph, parse_hedge_fund_response, run_graph_async
 from app.backend.services.portfolio import create_portfolio
 from src.utils.progress import progress
+from src.utils.analysts import ANALYST_ORDER
+from src.llm.models import LLM_ORDER, ModelProvider
 
 router = APIRouter(prefix="/hedge-fund")
+
+
+@router.get("/agents")
+async def get_available_agents():
+    """Get list of available AI agents/analysts."""
+    return {
+        "agents": [
+            {"id": value, "name": display} 
+            for display, value in ANALYST_ORDER
+        ]
+    }
+
+
+@router.get("/models")
+async def get_available_models():
+    """Get list of available LLM models."""
+    return {
+        "models": [
+            {
+                "display_name": display,
+                "model_name": name,
+                "provider": provider
+            }
+            for display, name, provider in LLM_ORDER
+        ]
+    }
+
+
+@router.post("/run-sync")
+async def run_hedge_fund_sync(request: HedgeFundRequest):
+    """Synchronous endpoint for running hedge fund analysis - easier for Postman testing."""
+    try:
+        # Create the portfolio
+        portfolio = create_portfolio(request.initial_cash, request.margin_requirement, request.tickers)
+
+        # Construct agent graph
+        graph = create_graph(request.selected_agents)
+        graph = graph.compile()
+
+        # Convert model_provider to string if it's an enum
+        model_provider = request.model_provider
+        if hasattr(model_provider, "value"):
+            model_provider = model_provider.value
+
+        # Run the graph
+        result = await run_graph_async(
+            graph=graph,
+            portfolio=portfolio,
+            tickers=request.tickers,
+            start_date=request.get_start_date(),
+            end_date=request.end_date,
+            model_name=request.model_name,
+            model_provider=model_provider,
+            show_reasoning=request.show_reasoning,
+        )
+
+        if not result or not result.get("messages"):
+            raise HTTPException(status_code=500, detail="Failed to generate hedge fund decisions")
+
+        # Return the final result
+        return {
+            "decisions": parse_hedge_fund_response(result.get("messages", [])[-1].content),
+            "analyst_signals": result.get("data", {}).get("analyst_signals", {}),
+            "metadata": {
+                "tickers": request.tickers,
+                "start_date": request.get_start_date(),
+                "end_date": request.end_date,
+                "model": f"{request.model_provider.value}:{request.model_name}",
+                "selected_agents": request.selected_agents
+            }
+        }
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 
 @router.post(
@@ -56,10 +134,11 @@ async def run_hedge_fund(request: HedgeFundRequest):
                         graph=graph,
                         portfolio=portfolio,
                         tickers=request.tickers,
-                        start_date=request.start_date,
+                        start_date=request.get_start_date(),
                         end_date=request.end_date,
                         model_name=request.model_name,
                         model_provider=model_provider,
+                        show_reasoning=request.show_reasoning,
                     )
                 )
                 # Send initial message

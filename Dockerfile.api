@@ -1,0 +1,29 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Set PYTHONPATH to include the app directory
+ENV PYTHONPATH=/app
+
+# Install Poetry
+RUN pip install poetry==1.7.1
+
+# Copy only dependency files first for better caching
+COPY pyproject.toml poetry.lock* /app/
+
+# Configure Poetry to not use a virtual environment and install dependencies
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --only=main
+
+# Copy rest of the source code
+COPY . /app/
+
+# Expose the port that the API will run on
+EXPOSE 8000
+
+# Set environment variables for production
+ENV PYTHONUNBUFFERED=1
+ENV PORT=8000
+
+# Command to run the API server
+CMD ["python", "app/backend/run_api.py"] 

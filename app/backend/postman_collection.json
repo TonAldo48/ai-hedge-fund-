@@ -1,0 +1,97 @@
+{
+  "info": {
+    "name": "AI Hedge Fund API",
+    "description": "Collection for testing AI Hedge Fund API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Get Available Agents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/hedge-fund/agents",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["hedge-fund", "agents"]
+        }
+      }
+    },
+    {
+      "name": "Get Available Models",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/hedge-fund/models",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["hedge-fund", "models"]
+        }
+      }
+    },
+    {
+      "name": "Run Hedge Fund Analysis (Sync)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\", \"GOOGL\"],\n  \"selected_agents\": [\"technical_analyst\", \"fundamental_analyst\", \"sentiment_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 100000,\n  \"margin_requirement\": 0\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/hedge-fund/run-sync",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["hedge-fund", "run-sync"]
+        }
+      }
+    },
+    {
+      "name": "Run Hedge Fund Analysis (Streaming)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\"],\n  \"selected_agents\": [\"technical_analyst\", \"risk_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 50000,\n  \"margin_requirement\": 0,\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-03-31\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/hedge-fund/run",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["hedge-fund", "run"]
+        }
+      }
+    }
+  ]
+} 

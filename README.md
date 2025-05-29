@@ -231,6 +231,72 @@ poetry run python src/backtester.py --ticker AAPL,MSFT,NVDA --ollama
 run.bat --ticker AAPL,MSFT,NVDA --ollama backtest
 ```
 
+### Running the Web API (NEW!)
+
+The hedge fund also includes a modern REST API with real-time streaming capabilities, making it easy to integrate with web applications, mobile apps, or other services.
+
+#### Start the API Server
+```bash
+# With Poetry:
+poetry run python app/backend/run_api.py
+
+# API will be available at: http://localhost:8000
+# Interactive docs: http://localhost:8000/docs
+```
+
+#### Key API Features
+- **RESTful endpoints** for all hedge fund functionality
+- **Real-time streaming** with Server-Sent Events
+- **Multiple AI agents** (Warren Buffett, Peter Lynch, Technical Analyst, etc.)
+- **Show reasoning flag** (equivalent to CLI `--show-reasoning`)
+- **Comprehensive documentation** with examples
+
+#### Quick API Examples
+
+**Health Check:**
+```bash
+curl http://localhost:8000/health
+```
+
+**List Available Agents:**
+```bash
+curl http://localhost:8000/hedge-fund/agents
+```
+
+**Run Analysis with Reasoning:**
+```bash
+curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tickers": ["AAPL"],
+    "selected_agents": ["warren_buffett"],
+    "model_name": "gpt-4o-mini", 
+    "model_provider": "OpenAI",
+    "show_reasoning": true
+  }'
+```
+
+**Stream Real-time Analysis:**
+```bash
+curl -X POST "http://localhost:8000/hedge-fund/run" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{
+    "tickers": ["AAPL", "MSFT"],
+    "selected_agents": ["warren_buffett", "technical_analyst"],
+    "model_name": "gpt-4o",
+    "model_provider": "OpenAI"
+  }' \
+  --no-buffer
+```
+
+#### API Documentation
+- **Full API Guide**: `app/backend/API_INTERACTION_GUIDE.md`
+- **Quick Reference**: `app/backend/API_QUICK_REFERENCE.md`
+- **Postman Collection**: `app/backend/postman_collection.json`
+- **Python Test Scripts**: `app/backend/test_*.py`
+
+The API transforms the command-line interface into modern HTTP endpoints while preserving all functionality, including the `show_reasoning` flag for detailed AI explanations.
 
 ## Project Structure 
 ```

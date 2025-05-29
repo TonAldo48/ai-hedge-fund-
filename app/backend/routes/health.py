@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 import asyncio
 import json
+from datetime import datetime
 
 router = APIRouter()
 
@@ -9,6 +10,16 @@ router = APIRouter()
 @router.get("/")
 async def root():
     return {"message": "Welcome to AI Hedge Fund API"}
+
+
+@router.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "service": "AI Hedge Fund API"
+    }
 
 
 @router.get("/ping")
