@@ -20,11 +20,18 @@ class ChatMessage(BaseModel):
     timestamp: Optional[str] = None
 
 
+class ChatRequest(BaseModel):
+    message: str
+    conversation_id: Optional[str] = None
+    stream: bool = False
+
+
 class ChatResponse(BaseModel):
     response: str
     success: bool
     timestamp: str
     agent: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class HedgeFundRequest(BaseModel):

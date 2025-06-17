@@ -29,10 +29,11 @@ app = FastAPI(
     **Development**: If no `API_KEY` or `HEDGE_FUND_API_KEY` environment variable is set, authentication is disabled.
     
     ### 🚀 Features:
-    - Multiple AI analyst agents (Warren Buffett, Peter Lynch, Technical Analyst, etc.)
+    - Multiple AI analyst agents (Warren Buffett, Peter Lynch, Charlie Munger, Ben Graham, Technical Analyst, etc.)
+    - Natural language chat interface for each agent
     - Support for various LLM models (OpenAI, Anthropic, DeepSeek, etc.)
     - Real-time streaming updates via Server-Sent Events
-    - Synchronous endpoint for simple testing
+    - Multi-agent comparison and consensus building
     - Production-ready authentication
     
     ### 📚 Getting Started:
@@ -43,16 +44,26 @@ app = FastAPI(
        - `GET /hedge-fund/models` - List available models
     
     2. **Protected endpoints** (API key required):
-       - `POST /hedge-fund/run-sync` - Synchronous analysis
-       - `POST /hedge-fund/run` - Streaming analysis
+       - `POST /hedge-fund/run-sync` - Synchronous hedge fund analysis
+       - `POST /hedge-fund/run` - Streaming hedge fund analysis
+       - `GET /api/agents/` - List all chat agents with capabilities
+       - `POST /api/agents/{agent_name}/analyze` - Chat with specific agent
+       - `POST /api/agents/{agent_name}/analyze-streaming` - Stream agent responses
+       - `POST /api/agents/compare` - Compare multiple agent perspectives
+       - `GET /api/agents/recommend` - Get agent recommendation for query
     
     ### 💡 Example Usage:
     ```bash
-    # With X-API-Key header
-    curl -H "X-API-Key: your-api-key" -X POST "/hedge-fund/run-sync" ...
+    # List available chat agents
+    curl -H "X-API-Key: your-api-key" "/api/agents/"
     
-    # With Bearer token
-    curl -H "Authorization: Bearer your-api-key" -X POST "/hedge-fund/run-sync" ...
+    # Chat with Warren Buffett
+    curl -H "Authorization: Bearer your-api-key" -X POST "/api/agents/warren_buffett/analyze" \\
+      -d '{"query": "What do you think about Apple's moat?"}'
+    
+    # Compare multiple perspectives
+    curl -H "X-API-Key: your-api-key" -X POST "/api/agents/compare" \\
+      -d '{"query": "Should I buy Tesla?", "selected_agents": ["warren_buffett", "peter_lynch", "technical_analyst"]}'
     ```
     """,
     version="0.1.0",
@@ -81,7 +92,7 @@ async def root():
         "documentation": "/docs",
         "health_check": "/health",
         "authentication": {
-            "required_for": ["/hedge-fund/run-sync", "/hedge-fund/run"],
+            "required_for": ["/hedge-fund/run-sync", "/hedge-fund/run", "/api/agents/*"],
             "methods": ["X-API-Key header", "Bearer token"],
             "development_mode": "Authentication disabled if no API_KEY environment variable"
         },
@@ -90,5 +101,12 @@ async def root():
             "/health", 
             "/hedge-fund/agents",
             "/hedge-fund/models"
+        ],
+        "chat_agents": [
+            "warren_buffett",
+            "peter_lynch", 
+            "charlie_munger",
+            "ben_graham",
+            "technical_analyst"
         ]
     }

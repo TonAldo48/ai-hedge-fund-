@@ -1,8 +1,12 @@
+"""
+Ben Graham Chat Agent for Natural Language Financial Analysis
+"""
 import os
 from typing import Dict, Any, List, AsyncGenerator, Optional
 from datetime import datetime, timedelta
 import json
 import asyncio
+import math
 
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.tools import tool
@@ -15,14 +19,11 @@ from langchain.callbacks.manager import CallbackManager
 from langchain_core.outputs import LLMResult
 from langchain.schema import AgentAction, AgentFinish
 
-# Import Warren Buffett analysis functions
-from src.agents.warren_buffett import (
-    analyze_fundamentals,
-    analyze_moat,
-    analyze_consistency,
-    analyze_management_quality,
-    calculate_intrinsic_value,
-    calculate_owner_earnings
+# Import Ben Graham analysis functions
+from src.agents.ben_graham import (
+    analyze_earnings_stability,
+    analyze_financial_strength,
+    analyze_valuation_graham
 )
 
 # Import data fetching functions
@@ -41,104 +42,35 @@ def clean_ticker(ticker: str) -> str:
     return ticker.strip().strip("'\"").upper()
 
 @tool
-def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
+def ben_graham_earnings_stability_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Analyze a stock's fundamental health using Warren Buffett's criteria.
-    Evaluates ROE, debt levels, operating margins, and liquidity position.
+    Analyze earnings stability using Benjamin Graham's criteria.
+    Graham insisted on at least 5 years of consistently positive earnings.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing fundamentals analysis with score, details, and key metrics
+        Dict containing earnings stability analysis and consistency assessment
     """
     try:
         ticker = clean_ticker(ticker)
         end_date = datetime.now().strftime("%Y-%m-%d")
         
-        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_fundamentals(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_fundamentals",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_fundamentals",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_moat_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze a company's competitive moat using Buffett's approach.
-    Looks for durable competitive advantages through stable ROE and margins.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing moat analysis with score, details, and competitive advantage assessment
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_moat(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_moat",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_moat",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze earnings consistency and growth using Buffett's criteria.
-    Evaluates earnings stability and growth trends over multiple periods.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing consistency analysis with score, details, and earnings trends
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
+        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=10)
         financial_line_items = search_line_items(
             ticker,
-            ["net_income", "revenue", "earnings_per_share"],
+            ["earnings_per_share", "revenue", "net_income"],
             end_date,
             period="annual",
             limit=10
         )
         
-        result = analyze_consistency(financial_line_items)
+        result = analyze_earnings_stability(metrics, financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_consistency",
+            "analysis_type": "ben_graham_earnings_stability",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -146,23 +78,23 @@ def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_consistency",
+            "analysis_type": "ben_graham_earnings_stability",
             "error": str(e),
             "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
+def ben_graham_financial_strength_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Analyze management quality using Buffett's shareholder-oriented criteria.
-    Evaluates share buybacks, dividends, and capital allocation decisions.
+    Evaluate financial strength using Graham's conservative criteria.
+    Focuses on current ratio (>=2), low debt, and dividend consistency.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing management analysis with score, details, and shareholder focus assessment
+        Dict containing financial strength metrics and safety assessment
     """
     try:
         ticker = clean_ticker(ticker)
@@ -171,20 +103,20 @@ def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
         financial_line_items = search_line_items(
             ticker,
             [
-                "issuance_or_purchase_of_equity_shares",
-                "dividends_and_other_cash_distributions",
-                "outstanding_shares"
+                "total_assets", "total_liabilities", "current_assets", 
+                "current_liabilities", "dividends_and_other_cash_distributions", 
+                "shareholders_equity"
             ],
             end_date,
             period="annual",
-            limit=5
+            limit=10
         )
         
-        result = analyze_management_quality(financial_line_items)
+        result = analyze_financial_strength(financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "ben_graham_financial_strength",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -192,23 +124,23 @@ def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "ben_graham_financial_strength",
             "error": str(e),
             "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
+def ben_graham_margin_of_safety_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate intrinsic value using Buffett's DCF approach with owner earnings.
-    Provides margin of safety calculation and valuation assessment.
+    Calculate margin of safety using Graham's valuation methods.
+    Includes Net-Net analysis and Graham Number calculation.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing intrinsic value analysis with valuation, margin of safety, and investment recommendation
+        Dict containing valuation analysis with margin of safety calculation
     """
     try:
         ticker = clean_ticker(ticker)
@@ -217,8 +149,8 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
         financial_line_items = search_line_items(
             ticker,
             [
-                "net_income", "depreciation_and_amortization", "capital_expenditure",
-                "outstanding_shares", "revenue"
+                "current_assets", "total_liabilities", "book_value_per_share",
+                "earnings_per_share", "outstanding_shares", "total_assets"
             ],
             end_date,
             period="annual",
@@ -226,18 +158,11 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
         )
         
         market_cap = get_market_cap(ticker, end_date)
-        result = calculate_intrinsic_value(financial_line_items)
-        
-        # Add margin of safety calculation
-        margin_of_safety = None
-        if result.get("intrinsic_value") and market_cap:
-            margin_of_safety = (result["intrinsic_value"] - market_cap) / market_cap
-            result["margin_of_safety"] = margin_of_safety
-            result["market_cap"] = market_cap
+        result = analyze_valuation_graham(financial_line_items, market_cap)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "ben_graham_margin_of_safety",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -245,23 +170,23 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "ben_graham_margin_of_safety",
             "error": str(e),
-            "result": {"intrinsic_value": None, "details": f"Error: {str(e)}"},
+            "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
+def ben_graham_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate owner earnings using Buffett's preferred earnings measure.
-    Owner Earnings = Net Income + Depreciation - Maintenance CapEx
+    Calculate intrinsic value using Graham's formula.
+    Graham Number = sqrt(22.5 × EPS × Book Value per Share)
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing owner earnings analysis with components and true earnings power assessment
+        Dict containing intrinsic value calculation and investment recommendation
     """
     try:
         ticker = clean_ticker(ticker)
@@ -269,17 +194,45 @@ def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
         
         financial_line_items = search_line_items(
             ticker,
-            ["net_income", "depreciation_and_amortization", "capital_expenditure"],
+            ["earnings_per_share", "book_value_per_share", "outstanding_shares"],
             end_date,
             period="annual",
-            limit=5
+            limit=1
         )
         
-        result = calculate_owner_earnings(financial_line_items)
+        market_cap = get_market_cap(ticker, end_date)
+        
+        if not financial_line_items:
+            raise ValueError("No financial data available")
+        
+        latest = financial_line_items[0]
+        eps = latest.earnings_per_share or 0
+        bvps = latest.book_value_per_share or 0
+        shares = latest.outstanding_shares or 0
+        
+        graham_number = None
+        margin_of_safety = None
+        
+        if eps > 0 and bvps > 0:
+            graham_number = math.sqrt(22.5 * eps * bvps)
+            
+            if market_cap and shares > 0:
+                current_price = market_cap / shares
+                margin_of_safety = (graham_number - current_price) / current_price
+        
+        result = {
+            "graham_number": graham_number,
+            "current_price": market_cap / shares if market_cap and shares > 0 else None,
+            "margin_of_safety": margin_of_safety,
+            "eps": eps,
+            "book_value_per_share": bvps,
+            "recommendation": "Buy" if margin_of_safety and margin_of_safety > 0.3 else 
+                            "Hold" if margin_of_safety and margin_of_safety > 0 else "Avoid"
+        }
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_owner_earnings",
+            "analysis_type": "ben_graham_intrinsic_value",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -287,9 +240,9 @@ def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_owner_earnings",
+            "analysis_type": "ben_graham_intrinsic_value",
             "error": str(e),
-            "result": {"owner_earnings": None, "details": f"Error: {str(e)}"},
+            "result": {"graham_number": None, "error": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
@@ -347,24 +300,18 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         tool_name = serialized.get("name", "Unknown tool")
         
         # Create specific messages based on the tool type
-        if "fundamentals" in tool_name:
-            message = f"📊 Analyzing {input_str} fundamentals..."
-            details = "Calculating ROE, debt ratios, operating margins, and liquidity metrics"
-        elif "moat" in tool_name:
-            message = f"🏰 Evaluating {input_str} competitive moat..."
-            details = "Checking for durable competitive advantages and pricing power"
-        elif "consistency" in tool_name:
-            message = f"📈 Examining {input_str} earnings consistency..."
-            details = "Analyzing earnings stability and growth patterns over time"
-        elif "management" in tool_name:
-            message = f"👔 Assessing {input_str} management quality..."
-            details = "Evaluating capital allocation, dividends, and shareholder policies"
+        if "earnings_stability" in tool_name:
+            message = f"📊 Analyzing {input_str} earnings stability..."
+            details = "Checking for consistent positive earnings over multiple years"
+        elif "financial_strength" in tool_name:
+            message = f"💪 Evaluating {input_str} financial strength..."
+            details = "Assessing liquidity, debt levels, and dividend history"
+        elif "margin_of_safety" in tool_name:
+            message = f"🔍 Calculating {input_str} margin of safety..."
+            details = "Performing Net-Net and Graham Number valuation"
         elif "intrinsic_value" in tool_name:
-            message = f"💰 Calculating {input_str} intrinsic value..."
-            details = "Running DCF model with owner earnings and margin of safety"
-        elif "owner_earnings" in tool_name:
-            message = f"💵 Computing {input_str} owner earnings..."
-            details = "Calculating true cash-generating ability of the business"
+            message = f"💰 Computing {input_str} intrinsic value..."
+            details = "Applying Graham's valuation formula"
         else:
             message = f"⚡ Running {tool_name} for {input_str}..."
             details = f"Performing analysis on {input_str}"
@@ -384,24 +331,18 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         details = "Processing results..."
         
         try:
-            if "ROE" in output and "debt" in output:
-                message = "📊 Fundamentals data collected"
-                details = "Found ROE, debt ratios, margins, and liquidity metrics"
-            elif "moat" in output or "score" in output:
-                message = "🏰 Moat analysis complete"
-                details = "Competitive advantage assessment finished"
-            elif "earnings" in output and "growth" in output:
-                message = "📈 Earnings patterns analyzed"
-                details = "Growth consistency evaluation complete"
-            elif "dilution" in output or "dividends" in output:
-                message = "👔 Management evaluation done"
-                details = "Capital allocation assessment complete"
-            elif "intrinsic_value" in output or "margin_of_safety" in output:
-                message = "💰 Valuation model complete"
-                details = "DCF calculation and margin of safety determined"
-            elif "owner_earnings" in output:
-                message = "💵 Owner earnings calculated"
-                details = "True cash-generating ability assessed"
+            if "earnings" in output and "stability" in output:
+                message = "📊 Earnings analysis complete"
+                details = "Earnings consistency evaluated"
+            elif "current ratio" in output or "debt" in output:
+                message = "💪 Financial strength assessed"
+                details = "Balance sheet metrics analyzed"
+            elif "Graham Number" in output or "margin of safety" in output:
+                message = "🔍 Valuation calculated"
+                details = "Margin of safety determined"
+            elif "intrinsic" in output:
+                message = "💰 Intrinsic value computed"
+                details = "Graham formula applied"
         except:
             pass  # Use default message if parsing fails
             
@@ -417,12 +358,12 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         # Vary the thinking messages to be more specific
         thinking_messages = [
-            "🤔 Warren Buffett is evaluating the analysis...",
-            "🤔 Considering investment implications...",
-            "🤔 Weighing the risk-reward balance...",
+            "🤔 Ben Graham is evaluating the fundamentals...",
+            "🤔 Calculating margin of safety...",
+            "🤔 Assessing financial conservatism...",
             "🤔 Applying value investing principles...",
-            "🤔 Synthesizing financial data...",
-            "🤔 Determining next analysis step..."
+            "🤔 Checking defensive criteria...",
+            "🤔 Determining investment merit..."
         ]
         
         # Use step to rotate through different messages
@@ -430,7 +371,7 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         self._send_event_sync("llm_thinking", {
             "message": thinking_messages[message_index],
-            "details": "Processing data with Buffett's investment criteria",
+            "details": "Processing data with Graham's value investing criteria",
             "step": self.current_step
         })
     
@@ -446,19 +387,9 @@ class StreamingCallbackHandler(BaseCallbackHandler):
                     "message": f"💭 Thought: {thought}",
                     "details": "Deciding next action..."
                 })
-    
-    def on_text(self, text: str, **kwargs) -> Any:
-        """Called when agent produces text."""
-        if "Thought:" in text:
-            thought = text.split("Thought:")[1].split("\n")[0].strip()
-            self._send_event_sync("agent_thinking", {
-                "thought": thought,
-                "message": f"💭 {thought}",
-                "details": "Processing analysis logic..."
-            })
 
-class WarrenBuffettChatAgent:
-    """Warren Buffett specialized chat agent for value investing analysis."""
+class BenGrahamChatAgent:
+    """Ben Graham specialized chat agent for deep value investing analysis."""
     
     def __init__(self, model_name: str = "gpt-4o-mini", model_provider: str = "openai"):
         self.model_name = model_name
@@ -470,42 +401,48 @@ class WarrenBuffettChatAgent:
             raise ValueError(f"Failed to initialize model: {model_name} with provider: {model_provider}")
         
         # Import the existing tools
-        from app.backend.services.warren_buffett_chat_agent import (
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+        from app.backend.services.ben_graham_chat_agent import (
+            ben_graham_earnings_stability_analysis,
+            ben_graham_financial_strength_analysis,
+            ben_graham_margin_of_safety_analysis,
+            ben_graham_intrinsic_value_analysis
         )
         
         self.tools = [
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+            ben_graham_earnings_stability_analysis,
+            ben_graham_financial_strength_analysis,
+            ben_graham_margin_of_safety_analysis,
+            ben_graham_intrinsic_value_analysis
         ]
         
-        # Create prompt (reuse existing one)
-        template = """You are Warren Buffett, the legendary value investor and chairman of Berkshire Hathaway. You are known for your long-term investment philosophy, focus on intrinsic value, and ability to identify companies with strong competitive moats.
+        # Create prompt
+        template = """You are Benjamin Graham, the father of value investing and author of "The Intelligent Investor" and "Security Analysis". You taught Warren Buffett at Columbia Business School and are known for your systematic, analytical approach to investing based on fundamental analysis and the concept of margin of safety.
 
 Your investment philosophy includes:
-- Focus on businesses you can understand
-- Look for companies with sustainable competitive advantages (economic moats)
-- Buy at prices below intrinsic value (margin of safety)
-- Think like an owner, not a trader
-- Favor consistent, predictable earnings
-- Prefer companies with excellent management
-- Be patient and disciplined
+- Margin of safety is the central concept of investment
+- Distinguish between investment and speculation
+- Focus on intrinsic value, not market price
+- Prefer defensive investing over aggressive strategies
+- Insist on financial strength and earnings stability
+- The market is there to serve you, not to instruct you (Mr. Market analogy)
+- Price is what you pay, value is what you get
+- In the short run, the market is a voting machine; in the long run, it's a weighing machine
 
-When analyzing companies, you consider:
-- Business fundamentals (ROE, margins, debt levels)
-- Competitive moat strength and durability  
-- Earnings consistency and predictability
-- Management quality and capital allocation
-- Intrinsic value calculation and margin of safety
+Your analytical criteria include:
+- Adequate size of the enterprise
+- Strong financial condition (current ratio > 2)
+- Earnings stability (positive earnings for at least 10 years)
+- Dividend record (uninterrupted payments for 20 years)
+- Earnings growth (at least one-third over 10 years)
+- Moderate P/E ratio (< 15x average earnings)
+- Moderate price to book ratio (< 1.5x)
 
-You should respond in Warren Buffett's characteristic style - folksy, using analogies, referring to business principles, and focusing on long-term value creation.
+Special situations you look for:
+- Net-Net stocks (market cap < net current asset value)
+- Graham Number opportunities (price < sqrt(22.5 × EPS × BVPS))
+- Bargain issues selling below liquidation value
+
+You should respond in Benjamin Graham's characteristic style - academic, methodical, conservative, emphasizing quantitative analysis and downside protection. Reference your books and academic work when relevant.
 
 TOOLS:
 ------
@@ -554,14 +491,14 @@ Thought: {agent_scratchpad}"""
     
     async def analyze(self, query: str, chat_history: List = None) -> Dict[str, Any]:
         """
-        Process a natural language financial analysis query with Warren Buffett's perspective.
+        Process a natural language financial analysis query with Ben Graham's perspective.
         
         Args:
-            query: Natural language query (e.g., "What do you think about Apple's moat?")
+            query: Natural language query (e.g., "What's the margin of safety for Apple?")
             chat_history: Previous conversation messages
             
         Returns:
-            Dict containing analysis results and Buffett-style response
+            Dict containing analysis results and Graham-style response
         """
         try:
             # Execute the agent
@@ -575,7 +512,7 @@ Thought: {agent_scratchpad}"""
                 "intermediate_steps": result.get("intermediate_steps", []),
                 "success": True,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "ben_graham"
             }
             
         except Exception as e:
@@ -584,7 +521,7 @@ Thought: {agent_scratchpad}"""
                 "error": str(e),
                 "success": False,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "ben_graham"
             }
         
     async def analyze_streaming(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
@@ -637,9 +574,9 @@ Thought: {agent_scratchpad}"""
         initial_event = {
             "type": "start",
             "data": {
-                "message": "🎯 Starting Warren Buffett analysis...",
+                "message": "🎯 Starting Benjamin Graham value analysis...",
                 "query": query,
-                "agent": "warren_buffett"
+                "agent": "ben_graham"
             },
             "timestamp": datetime.now().isoformat()
         }
@@ -654,13 +591,13 @@ Thought: {agent_scratchpad}"""
             except asyncio.TimeoutError:
                 # Send contextual heartbeat to keep connection alive
                 heartbeat_messages = [
-                    "⏳ Retrieving financial data from market sources...",
-                    "⏳ Cross-referencing industry benchmarks...",
-                    "⏳ Applying Buffett's investment criteria...",
-                    "⏳ Calculating complex financial metrics...",
-                    "⏳ Evaluating long-term business prospects...",
-                    "⏳ Assessing management track record...",
-                    "⏳ Comparing to similar investments..."
+                    "⏳ Analyzing earnings stability...",
+                    "⏳ Evaluating financial strength...",
+                    "⏳ Calculating margin of safety...",
+                    "⏳ Checking Graham criteria...",
+                    "⏳ Computing intrinsic value...",
+                    "⏳ Assessing defensive characteristics...",
+                    "⏳ Applying value investing principles..."
                 ]
                 
                 import random
@@ -679,7 +616,7 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "response": result["output"],
                     "success": True,
-                    "agent": "warren_buffett"
+                    "agent": "ben_graham"
                 },
                 "timestamp": datetime.now().isoformat()
             }
@@ -690,62 +627,32 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "error": str(e),
                     "success": False,
-                    "agent": "warren_buffett"
+                    "agent": "ben_graham"
                 },
                 "timestamp": datetime.now().isoformat()
             }
             yield json.dumps(error_event)
 
-    async def analyze_streaming_v2(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
-        """
-        Stream the final response from the Warren Buffett agent token by token.
-        This is compatible with the Vercel AI SDK's useChat hook.
-        """
-        # Get the full response from the existing `analyze` method
-        # We can reuse the logic without duplicating it
-        result = await self.analyze(query, chat_history)
-        
-        # Simulate a streaming effect for the final response text
-        # In a real scenario, you would use the streaming capabilities of the LLM
-        response_text = result.get("response", "No response generated.")
-        
-        # Get the underlying LLM with streaming enabled
-        streaming_llm = get_model(
-            self.model_name,
-            self.model_provider,
-            streaming=True
-        )
-
-        # Create a simple prompt to generate the final response in a streaming way
-        messages = [
-            SystemMessage(content="You are a helpful assistant."),
-            HumanMessage(content=f"Based on the following analysis, provide a comprehensive answer as Warren Buffett:\n\n{response_text}")
-        ]
-
-        # Stream the response from the LLM
-        async for chunk in streaming_llm.astream(messages):
-            yield chunk.content
-
 # Global agent instance with lazy initialization
-_warren_buffett_agent = None
+_ben_graham_agent = None
 
-def get_warren_buffett_agent():
-    """Get or create the Warren Buffett chat agent instance."""
-    global _warren_buffett_agent
-    if _warren_buffett_agent is None:
-        _warren_buffett_agent = WarrenBuffettChatAgent()
-    return _warren_buffett_agent
+def get_ben_graham_agent():
+    """Get or create the Ben Graham chat agent instance."""
+    global _ben_graham_agent
+    if _ben_graham_agent is None:
+        _ben_graham_agent = BenGrahamChatAgent()
+    return _ben_graham_agent
 
-async def process_warren_buffett_query(query: str, chat_history: List = None) -> Dict[str, Any]:
+async def process_ben_graham_query(query: str, chat_history: List = None) -> Dict[str, Any]:
     """
-    Process a natural language query using Warren Buffett's investment approach.
+    Process a natural language query using Ben Graham's value investing approach.
     
     Args:
         query: Natural language query about stocks or investing
         chat_history: Previous conversation messages
         
     Returns:
-        Dict containing Warren Buffett's analysis and response
+        Dict containing Ben Graham's analysis and response
     """
-    agent = get_warren_buffett_agent()
+    agent = get_ben_graham_agent()
     return await agent.analyze(query, chat_history) 

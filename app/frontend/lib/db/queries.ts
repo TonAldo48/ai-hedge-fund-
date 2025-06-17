@@ -80,18 +80,43 @@ export async function createGuestUser() {
   }
 }
 
+export async function createChat({
+  id,
+  title,
+  userId,
+  visibility = 'private',
+  agentType = 'general',
+}: {
+  id: string;
+  title: string;
+  userId: string;
+  visibility?: 'private' | 'public';
+  agentType?: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
+}) {
+  const createdAt = new Date().toISOString();
+
+  return await db.insert(chat).values({
+    id,
+    title,
+    userId,
+    visibility,
+    agentType,
+    createdAt: new Date(createdAt),
+  });
+}
+
 export async function saveChat({
   id,
   userId,
   title,
-  visibility,
+  visibility = 'private',
   agentType = 'general',
 }: {
   id: string;
   userId: string;
   title: string;
-  visibility: VisibilityType;
-  agentType?: 'general' | 'warren-buffett';
+  visibility?: 'private' | 'public';
+  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
 }) {
   try {
     return await db.insert(chat).values({
@@ -245,7 +270,7 @@ export async function getMessagesByChatIdAndAgentType({
   agentType 
 }: { 
   id: string;
-  agentType: 'general' | 'warren-buffett';
+  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
 }) {
   try {
     return await db

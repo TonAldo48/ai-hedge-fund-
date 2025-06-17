@@ -1,3 +1,6 @@
+"""
+Charlie Munger Chat Agent for Natural Language Financial Analysis
+"""
 import os
 from typing import Dict, Any, List, AsyncGenerator, Optional
 from datetime import datetime, timedelta
@@ -15,14 +18,12 @@ from langchain.callbacks.manager import CallbackManager
 from langchain_core.outputs import LLMResult
 from langchain.schema import AgentAction, AgentFinish
 
-# Import Warren Buffett analysis functions
-from src.agents.warren_buffett import (
-    analyze_fundamentals,
-    analyze_moat,
-    analyze_consistency,
+# Import Charlie Munger analysis functions
+from src.agents.charlie_munger import (
+    analyze_moat_strength,
     analyze_management_quality,
-    calculate_intrinsic_value,
-    calculate_owner_earnings
+    analyze_predictability,
+    analyze_news_sentiment
 )
 
 # Import data fetching functions
@@ -30,7 +31,9 @@ from src.tools.api import (
     get_financial_metrics,
     get_market_cap,
     search_line_items,
-    get_prices
+    get_prices,
+    get_insider_trades,
+    get_company_news
 )
 
 # Import existing LLM infrastructure
@@ -41,104 +44,39 @@ def clean_ticker(ticker: str) -> str:
     return ticker.strip().strip("'\"").upper()
 
 @tool
-def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
+def charlie_munger_moat_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Analyze a stock's fundamental health using Warren Buffett's criteria.
-    Evaluates ROE, debt levels, operating margins, and liquidity position.
+    Analyze a company's competitive moat using Charlie Munger's mental models.
+    Evaluates sustainable competitive advantages, pricing power, and barriers to entry.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing fundamentals analysis with score, details, and key metrics
+        Dict containing moat analysis with strength assessment and competitive advantages
     """
     try:
         ticker = clean_ticker(ticker)
         end_date = datetime.now().strftime("%Y-%m-%d")
         
         metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_fundamentals(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_fundamentals",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_fundamentals",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_moat_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze a company's competitive moat using Buffett's approach.
-    Looks for durable competitive advantages through stable ROE and margins.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing moat analysis with score, details, and competitive advantage assessment
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_moat(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_moat",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_moat",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze earnings consistency and growth using Buffett's criteria.
-    Evaluates earnings stability and growth trends over multiple periods.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing consistency analysis with score, details, and earnings trends
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
         financial_line_items = search_line_items(
             ticker,
-            ["net_income", "revenue", "earnings_per_share"],
+            [
+                "return_on_invested_capital", "gross_margin", "operating_margin",
+                "capital_expenditure", "revenue", "research_and_development",
+                "goodwill_and_intangible_assets"
+            ],
             end_date,
             period="annual",
-            limit=10
+            limit=5
         )
         
-        result = analyze_consistency(financial_line_items)
+        result = analyze_moat_strength(metrics, financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_consistency",
+            "analysis_type": "charlie_munger_moat",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -146,23 +84,23 @@ def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_consistency",
+            "analysis_type": "charlie_munger_moat",
             "error": str(e),
             "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
+def charlie_munger_management_quality_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Analyze management quality using Buffett's shareholder-oriented criteria.
-    Evaluates share buybacks, dividends, and capital allocation decisions.
+    Evaluate management quality using Munger's criteria for capital allocation wisdom.
+    Focuses on shareholder-friendly actions, debt management, and insider ownership.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing management analysis with score, details, and shareholder focus assessment
+        Dict containing management quality assessment with capital allocation analysis
     """
     try:
         ticker = clean_ticker(ticker)
@@ -171,20 +109,20 @@ def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
         financial_line_items = search_line_items(
             ticker,
             [
-                "issuance_or_purchase_of_equity_shares",
-                "dividends_and_other_cash_distributions",
-                "outstanding_shares"
+                "free_cash_flow", "net_income", "total_debt", "shareholders_equity",
+                "cash_and_equivalents", "revenue", "outstanding_shares"
             ],
             end_date,
             period="annual",
             limit=5
         )
         
-        result = analyze_management_quality(financial_line_items)
+        insider_trades = get_insider_trades(ticker, end_date, limit=50)
+        result = analyze_management_quality(financial_line_items, insider_trades)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "charlie_munger_management",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -192,23 +130,23 @@ def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "charlie_munger_management",
             "error": str(e),
             "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
+def charlie_munger_predictability_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate intrinsic value using Buffett's DCF approach with owner earnings.
-    Provides margin of safety calculation and valuation assessment.
+    Assess business predictability - Munger strongly prefers predictable businesses.
+    Analyzes revenue stability, margin consistency, and cash flow reliability.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing intrinsic value analysis with valuation, margin of safety, and investment recommendation
+        Dict containing predictability analysis with consistency metrics
     """
     try:
         ticker = clean_ticker(ticker)
@@ -217,27 +155,19 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
         financial_line_items = search_line_items(
             ticker,
             [
-                "net_income", "depreciation_and_amortization", "capital_expenditure",
-                "outstanding_shares", "revenue"
+                "revenue", "operating_income", "operating_margin",
+                "free_cash_flow", "earnings_per_share"
             ],
             end_date,
             period="annual",
-            limit=5
+            limit=10  # Need more years for predictability analysis
         )
         
-        market_cap = get_market_cap(ticker, end_date)
-        result = calculate_intrinsic_value(financial_line_items)
-        
-        # Add margin of safety calculation
-        margin_of_safety = None
-        if result.get("intrinsic_value") and market_cap:
-            margin_of_safety = (result["intrinsic_value"] - market_cap) / market_cap
-            result["margin_of_safety"] = margin_of_safety
-            result["market_cap"] = market_cap
+        result = analyze_predictability(financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "charlie_munger_predictability",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -245,51 +175,57 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "charlie_munger_predictability",
             "error": str(e),
-            "result": {"intrinsic_value": None, "details": f"Error: {str(e)}"},
+            "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
+def charlie_munger_mental_models_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate owner earnings using Buffett's preferred earnings measure.
-    Owner Earnings = Net Income + Depreciation - Maintenance CapEx
+    Apply Munger's mental models framework to analyze a company.
+    Combines insights from psychology, economics, and business analysis.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing owner earnings analysis with components and true earnings power assessment
+        Dict containing mental models analysis and multidisciplinary insights
     """
     try:
         ticker = clean_ticker(ticker)
         end_date = datetime.now().strftime("%Y-%m-%d")
         
-        financial_line_items = search_line_items(
-            ticker,
-            ["net_income", "depreciation_and_amortization", "capital_expenditure"],
-            end_date,
-            period="annual",
-            limit=5
-        )
+        # Get comprehensive data for mental models analysis
+        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
+        news = get_company_news(ticker, end_date, limit=20)
         
-        result = calculate_owner_earnings(financial_line_items)
+        # Combine different analyses for mental models perspective
+        news_sentiment = analyze_news_sentiment(news)
+        
+        # Create a mental models summary
+        mental_models_insights = {
+            "psychology": "Understanding customer behavior and brand loyalty",
+            "economics": "Network effects, economies of scale, switching costs",
+            "business_strategy": "Competitive positioning and moat durability",
+            "news_sentiment": news_sentiment,
+            "inversion_principle": "What could destroy this business?"
+        }
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_owner_earnings",
-            "result": result,
+            "analysis_type": "charlie_munger_mental_models",
+            "result": mental_models_insights,
             "timestamp": datetime.now().isoformat()
         }
         
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_owner_earnings",
+            "analysis_type": "charlie_munger_mental_models",
             "error": str(e),
-            "result": {"owner_earnings": None, "details": f"Error: {str(e)}"},
+            "result": {"details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
@@ -347,24 +283,18 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         tool_name = serialized.get("name", "Unknown tool")
         
         # Create specific messages based on the tool type
-        if "fundamentals" in tool_name:
-            message = f"📊 Analyzing {input_str} fundamentals..."
-            details = "Calculating ROE, debt ratios, operating margins, and liquidity metrics"
-        elif "moat" in tool_name:
+        if "moat" in tool_name:
             message = f"🏰 Evaluating {input_str} competitive moat..."
-            details = "Checking for durable competitive advantages and pricing power"
-        elif "consistency" in tool_name:
-            message = f"📈 Examining {input_str} earnings consistency..."
-            details = "Analyzing earnings stability and growth patterns over time"
+            details = "Analyzing sustainable competitive advantages and barriers to entry"
         elif "management" in tool_name:
             message = f"👔 Assessing {input_str} management quality..."
-            details = "Evaluating capital allocation, dividends, and shareholder policies"
-        elif "intrinsic_value" in tool_name:
-            message = f"💰 Calculating {input_str} intrinsic value..."
-            details = "Running DCF model with owner earnings and margin of safety"
-        elif "owner_earnings" in tool_name:
-            message = f"💵 Computing {input_str} owner earnings..."
-            details = "Calculating true cash-generating ability of the business"
+            details = "Evaluating capital allocation wisdom and shareholder orientation"
+        elif "predictability" in tool_name:
+            message = f"📊 Analyzing {input_str} business predictability..."
+            details = "Examining consistency of operations and cash flows"
+        elif "mental_models" in tool_name:
+            message = f"🧠 Applying mental models to {input_str}..."
+            details = "Using multidisciplinary thinking and inversion principles"
         else:
             message = f"⚡ Running {tool_name} for {input_str}..."
             details = f"Performing analysis on {input_str}"
@@ -384,24 +314,18 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         details = "Processing results..."
         
         try:
-            if "ROE" in output and "debt" in output:
-                message = "📊 Fundamentals data collected"
-                details = "Found ROE, debt ratios, margins, and liquidity metrics"
-            elif "moat" in output or "score" in output:
+            if "moat" in output or "ROIC" in output:
                 message = "🏰 Moat analysis complete"
                 details = "Competitive advantage assessment finished"
-            elif "earnings" in output and "growth" in output:
-                message = "📈 Earnings patterns analyzed"
-                details = "Growth consistency evaluation complete"
-            elif "dilution" in output or "dividends" in output:
+            elif "capital allocation" in output or "management" in output:
                 message = "👔 Management evaluation done"
                 details = "Capital allocation assessment complete"
-            elif "intrinsic_value" in output or "margin_of_safety" in output:
-                message = "💰 Valuation model complete"
-                details = "DCF calculation and margin of safety determined"
-            elif "owner_earnings" in output:
-                message = "💵 Owner earnings calculated"
-                details = "True cash-generating ability assessed"
+            elif "predictab" in output or "consistency" in output:
+                message = "📊 Predictability assessment complete"
+                details = "Business consistency evaluation finished"
+            elif "mental model" in output or "psychology" in output:
+                message = "🧠 Mental models applied"
+                details = "Multidisciplinary analysis complete"
         except:
             pass  # Use default message if parsing fails
             
@@ -417,12 +341,12 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         # Vary the thinking messages to be more specific
         thinking_messages = [
-            "🤔 Warren Buffett is evaluating the analysis...",
-            "🤔 Considering investment implications...",
-            "🤔 Weighing the risk-reward balance...",
-            "🤔 Applying value investing principles...",
-            "🤔 Synthesizing financial data...",
-            "🤔 Determining next analysis step..."
+            "🤔 Charlie Munger is applying mental models...",
+            "🤔 Considering the business moat...",
+            "🤔 Evaluating management integrity...",
+            "🤔 Inverting the problem...",
+            "🤔 Thinking about predictability...",
+            "🤔 Applying multidisciplinary thinking..."
         ]
         
         # Use step to rotate through different messages
@@ -430,7 +354,7 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         self._send_event_sync("llm_thinking", {
             "message": thinking_messages[message_index],
-            "details": "Processing data with Buffett's investment criteria",
+            "details": "Processing data with Munger's wisdom and mental models",
             "step": self.current_step
         })
     
@@ -446,19 +370,9 @@ class StreamingCallbackHandler(BaseCallbackHandler):
                     "message": f"💭 Thought: {thought}",
                     "details": "Deciding next action..."
                 })
-    
-    def on_text(self, text: str, **kwargs) -> Any:
-        """Called when agent produces text."""
-        if "Thought:" in text:
-            thought = text.split("Thought:")[1].split("\n")[0].strip()
-            self._send_event_sync("agent_thinking", {
-                "thought": thought,
-                "message": f"💭 {thought}",
-                "details": "Processing analysis logic..."
-            })
 
-class WarrenBuffettChatAgent:
-    """Warren Buffett specialized chat agent for value investing analysis."""
+class CharlieMungerChatAgent:
+    """Charlie Munger specialized chat agent for mental models and quality business analysis."""
     
     def __init__(self, model_name: str = "gpt-4o-mini", model_provider: str = "openai"):
         self.model_name = model_name
@@ -470,42 +384,49 @@ class WarrenBuffettChatAgent:
             raise ValueError(f"Failed to initialize model: {model_name} with provider: {model_provider}")
         
         # Import the existing tools
-        from app.backend.services.warren_buffett_chat_agent import (
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+        from app.backend.services.charlie_munger_chat_agent import (
+            charlie_munger_moat_analysis,
+            charlie_munger_management_quality_analysis,
+            charlie_munger_predictability_analysis,
+            charlie_munger_mental_models_analysis
         )
         
         self.tools = [
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+            charlie_munger_moat_analysis,
+            charlie_munger_management_quality_analysis,
+            charlie_munger_predictability_analysis,
+            charlie_munger_mental_models_analysis
         ]
         
-        # Create prompt (reuse existing one)
-        template = """You are Warren Buffett, the legendary value investor and chairman of Berkshire Hathaway. You are known for your long-term investment philosophy, focus on intrinsic value, and ability to identify companies with strong competitive moats.
+        # Create prompt
+        template = """You are Charlie Munger, Warren Buffett's long-time partner at Berkshire Hathaway and one of the greatest investors of all time. You are known for your multidisciplinary approach to investing, mental models framework, and wisdom about human psychology and decision-making.
 
 Your investment philosophy includes:
-- Focus on businesses you can understand
-- Look for companies with sustainable competitive advantages (economic moats)
-- Buy at prices below intrinsic value (margin of safety)
-- Think like an owner, not a trader
-- Favor consistent, predictable earnings
-- Prefer companies with excellent management
-- Be patient and disciplined
+- Mental models from multiple disciplines (psychology, economics, mathematics, physics, biology)
+- Focus on high-quality businesses with durable competitive advantages
+- Emphasis on competent and honest management
+- Preference for simple, predictable businesses
+- The importance of patience and rational thinking
+- Inversion: "Invert, always invert" - think about what could go wrong
+- Circle of competence - stay within what you understand
+- Margin of safety in all decisions
+
+Key mental models you often apply:
+- Opportunity cost and alternative uses of capital
+- Incentive-caused bias and human psychology
+- Compound interest and time value
+- Network effects and winner-take-all dynamics
+- The Lollapalooza effect (multiple forces acting together)
 
 When analyzing companies, you consider:
-- Business fundamentals (ROE, margins, debt levels)
-- Competitive moat strength and durability  
-- Earnings consistency and predictability
+- Sustainable competitive advantages (moats)
 - Management quality and capital allocation
-- Intrinsic value calculation and margin of safety
+- Business predictability and consistency
+- Return on invested capital (ROIC)
+- Risks and what could destroy the business
+- Psychological factors affecting the business
 
-You should respond in Warren Buffett's characteristic style - folksy, using analogies, referring to business principles, and focusing on long-term value creation.
+You should respond in Charlie Munger's characteristic style - philosophical, referencing mental models, using examples from multiple disciplines, emphasizing rationality and wisdom. Be direct and sometimes contrarian. Reference Poor Charlie's Almanack and your speeches when relevant.
 
 TOOLS:
 ------
@@ -554,14 +475,14 @@ Thought: {agent_scratchpad}"""
     
     async def analyze(self, query: str, chat_history: List = None) -> Dict[str, Any]:
         """
-        Process a natural language financial analysis query with Warren Buffett's perspective.
+        Process a natural language financial analysis query with Charlie Munger's perspective.
         
         Args:
-            query: Natural language query (e.g., "What do you think about Apple's moat?")
+            query: Natural language query (e.g., "Does Coca-Cola have a strong moat?")
             chat_history: Previous conversation messages
             
         Returns:
-            Dict containing analysis results and Buffett-style response
+            Dict containing analysis results and Munger-style response
         """
         try:
             # Execute the agent
@@ -575,7 +496,7 @@ Thought: {agent_scratchpad}"""
                 "intermediate_steps": result.get("intermediate_steps", []),
                 "success": True,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "charlie_munger"
             }
             
         except Exception as e:
@@ -584,7 +505,7 @@ Thought: {agent_scratchpad}"""
                 "error": str(e),
                 "success": False,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "charlie_munger"
             }
         
     async def analyze_streaming(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
@@ -637,9 +558,9 @@ Thought: {agent_scratchpad}"""
         initial_event = {
             "type": "start",
             "data": {
-                "message": "🎯 Starting Warren Buffett analysis...",
+                "message": "🎯 Starting Charlie Munger mental models analysis...",
                 "query": query,
-                "agent": "warren_buffett"
+                "agent": "charlie_munger"
             },
             "timestamp": datetime.now().isoformat()
         }
@@ -654,13 +575,13 @@ Thought: {agent_scratchpad}"""
             except asyncio.TimeoutError:
                 # Send contextual heartbeat to keep connection alive
                 heartbeat_messages = [
-                    "⏳ Retrieving financial data from market sources...",
-                    "⏳ Cross-referencing industry benchmarks...",
-                    "⏳ Applying Buffett's investment criteria...",
-                    "⏳ Calculating complex financial metrics...",
-                    "⏳ Evaluating long-term business prospects...",
-                    "⏳ Assessing management track record...",
-                    "⏳ Comparing to similar investments..."
+                    "⏳ Applying mental models framework...",
+                    "⏳ Evaluating competitive advantages...",
+                    "⏳ Analyzing management quality...",
+                    "⏳ Checking business predictability...",
+                    "⏳ Inverting the problem...",
+                    "⏳ Considering psychological factors...",
+                    "⏳ Assessing margin of safety..."
                 ]
                 
                 import random
@@ -679,7 +600,7 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "response": result["output"],
                     "success": True,
-                    "agent": "warren_buffett"
+                    "agent": "charlie_munger"
                 },
                 "timestamp": datetime.now().isoformat()
             }
@@ -690,62 +611,32 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "error": str(e),
                     "success": False,
-                    "agent": "warren_buffett"
+                    "agent": "charlie_munger"
                 },
                 "timestamp": datetime.now().isoformat()
             }
             yield json.dumps(error_event)
 
-    async def analyze_streaming_v2(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
-        """
-        Stream the final response from the Warren Buffett agent token by token.
-        This is compatible with the Vercel AI SDK's useChat hook.
-        """
-        # Get the full response from the existing `analyze` method
-        # We can reuse the logic without duplicating it
-        result = await self.analyze(query, chat_history)
-        
-        # Simulate a streaming effect for the final response text
-        # In a real scenario, you would use the streaming capabilities of the LLM
-        response_text = result.get("response", "No response generated.")
-        
-        # Get the underlying LLM with streaming enabled
-        streaming_llm = get_model(
-            self.model_name,
-            self.model_provider,
-            streaming=True
-        )
-
-        # Create a simple prompt to generate the final response in a streaming way
-        messages = [
-            SystemMessage(content="You are a helpful assistant."),
-            HumanMessage(content=f"Based on the following analysis, provide a comprehensive answer as Warren Buffett:\n\n{response_text}")
-        ]
-
-        # Stream the response from the LLM
-        async for chunk in streaming_llm.astream(messages):
-            yield chunk.content
-
 # Global agent instance with lazy initialization
-_warren_buffett_agent = None
+_charlie_munger_agent = None
 
-def get_warren_buffett_agent():
-    """Get or create the Warren Buffett chat agent instance."""
-    global _warren_buffett_agent
-    if _warren_buffett_agent is None:
-        _warren_buffett_agent = WarrenBuffettChatAgent()
-    return _warren_buffett_agent
+def get_charlie_munger_agent():
+    """Get or create the Charlie Munger chat agent instance."""
+    global _charlie_munger_agent
+    if _charlie_munger_agent is None:
+        _charlie_munger_agent = CharlieMungerChatAgent()
+    return _charlie_munger_agent
 
-async def process_warren_buffett_query(query: str, chat_history: List = None) -> Dict[str, Any]:
+async def process_charlie_munger_query(query: str, chat_history: List = None) -> Dict[str, Any]:
     """
-    Process a natural language query using Warren Buffett's investment approach.
+    Process a natural language query using Charlie Munger's mental models approach.
     
     Args:
         query: Natural language query about stocks or investing
         chat_history: Previous conversation messages
         
     Returns:
-        Dict containing Warren Buffett's analysis and response
+        Dict containing Charlie Munger's analysis and response
     """
-    agent = get_warren_buffett_agent()
+    agent = get_charlie_munger_agent()
     return await agent.analyze(query, chat_history) 

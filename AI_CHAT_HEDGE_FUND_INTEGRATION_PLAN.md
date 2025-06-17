@@ -41,7 +41,7 @@ This document outlines the integration plan to add hedge fund AI agents to the e
 **Goal**: Add hedge fund agents as selectable options in the existing chat sidebar
 
 **Technical Tasks**:
-- [ ] Add "AI Investment Agents" section to sidebar
+- [ ] Add "Investment Agents" section to sidebar
 - [ ] Create `<AgentSelector>` component
 - [ ] Display available agents with icons and descriptions
 - [ ] Handle agent selection and routing
@@ -54,7 +54,7 @@ This document outlines the integration plan to add hedge fund AI agents to the e
 ```tsx
 // In app-sidebar.tsx - Add before chat history
 <SidebarGroup>
-  <SidebarGroupLabel>AI Investment Agents</SidebarGroupLabel>
+  <SidebarGroupLabel>Investment Agents</SidebarGroupLabel>
   <SidebarGroupContent>
     <AgentSelector />
   </SidebarGroupContent>

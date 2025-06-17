@@ -64,7 +64,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>AI Investment Agents</SidebarGroupLabel>
+          <SidebarGroupLabel>Investment Agents</SidebarGroupLabel>
           <SidebarGroupContent>
             <AgentSelector />
           </SidebarGroupContent>

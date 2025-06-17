@@ -29,7 +29,9 @@ export const chat = pgTable('Chat', {
   visibility: varchar('visibility', { enum: ['public', 'private'] })
     .notNull()
     .default('private'),
-  agentType: varchar('agentType', { enum: ['general', 'warren-buffett'] })
+  agentType: varchar('agentType', { 
+    enum: ['general', 'warren-buffett', 'peter-lynch', 'charlie-munger', 'ben-graham', 'technical-analyst'] 
+  })
     .notNull()
     .default('general'),
 });

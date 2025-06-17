@@ -1,3 +1,6 @@
+"""
+Peter Lynch Chat Agent for Natural Language Financial Analysis
+"""
 import os
 from typing import Dict, Any, List, AsyncGenerator, Optional
 from datetime import datetime, timedelta
@@ -15,14 +18,13 @@ from langchain.callbacks.manager import CallbackManager
 from langchain_core.outputs import LLMResult
 from langchain.schema import AgentAction, AgentFinish
 
-# Import Warren Buffett analysis functions
-from src.agents.warren_buffett import (
-    analyze_fundamentals,
-    analyze_moat,
-    analyze_consistency,
-    analyze_management_quality,
-    calculate_intrinsic_value,
-    calculate_owner_earnings
+# Import Peter Lynch analysis functions
+from src.agents.peter_lynch import (
+    analyze_lynch_growth,
+    analyze_lynch_fundamentals,
+    analyze_lynch_valuation,
+    analyze_sentiment,
+    analyze_insider_activity
 )
 
 # Import data fetching functions
@@ -30,7 +32,9 @@ from src.tools.api import (
     get_financial_metrics,
     get_market_cap,
     search_line_items,
-    get_prices
+    get_prices,
+    get_insider_trades,
+    get_company_news
 )
 
 # Import existing LLM infrastructure
@@ -41,86 +45,16 @@ def clean_ticker(ticker: str) -> str:
     return ticker.strip().strip("'\"").upper()
 
 @tool
-def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
+def peter_lynch_growth_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Analyze a stock's fundamental health using Warren Buffett's criteria.
-    Evaluates ROE, debt levels, operating margins, and liquidity position.
+    Analyze a stock's growth potential using Peter Lynch's GARP (Growth at Reasonable Price) approach.
+    Evaluates revenue growth, EPS growth trends, and identifies potential 'ten-baggers'.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing fundamentals analysis with score, details, and key metrics
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_fundamentals(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_fundamentals",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_fundamentals",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_moat_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze a company's competitive moat using Buffett's approach.
-    Looks for durable competitive advantages through stable ROE and margins.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing moat analysis with score, details, and competitive advantage assessment
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
-        result = analyze_moat(metrics)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_moat",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_moat",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze earnings consistency and growth using Buffett's criteria.
-    Evaluates earnings stability and growth trends over multiple periods.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing consistency analysis with score, details, and earnings trends
+        Dict containing growth analysis with score, details, and growth metrics
     """
     try:
         ticker = clean_ticker(ticker)
@@ -128,63 +62,17 @@ def warren_buffett_consistency_analysis(ticker: str) -> Dict[str, Any]:
         
         financial_line_items = search_line_items(
             ticker,
-            ["net_income", "revenue", "earnings_per_share"],
-            end_date,
-            period="annual",
-            limit=10
-        )
-        
-        result = analyze_consistency(financial_line_items)
-        
-        return {
-            "ticker": ticker,
-            "analysis_type": "warren_buffett_consistency",
-            "result": result,
-            "timestamp": datetime.now().isoformat()
-        }
-        
-    except Exception as e:
-        return {
-            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_consistency",
-            "error": str(e),
-            "result": {"score": 0, "details": f"Error: {str(e)}"},
-            "timestamp": datetime.now().isoformat()
-        }
-
-@tool
-def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
-    """
-    Analyze management quality using Buffett's shareholder-oriented criteria.
-    Evaluates share buybacks, dividends, and capital allocation decisions.
-    
-    Args:
-        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
-    
-    Returns:
-        Dict containing management analysis with score, details, and shareholder focus assessment
-    """
-    try:
-        ticker = clean_ticker(ticker)
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        
-        financial_line_items = search_line_items(
-            ticker,
-            [
-                "issuance_or_purchase_of_equity_shares",
-                "dividends_and_other_cash_distributions",
-                "outstanding_shares"
-            ],
+            ["revenue", "earnings_per_share", "net_income", "outstanding_shares"],
             end_date,
             period="annual",
             limit=5
         )
         
-        result = analyze_management_quality(financial_line_items)
+        result = analyze_lynch_growth(financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "peter_lynch_growth",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -192,23 +80,23 @@ def warren_buffett_management_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_management",
+            "analysis_type": "peter_lynch_growth",
             "error": str(e),
             "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
+def peter_lynch_peg_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate intrinsic value using Buffett's DCF approach with owner earnings.
-    Provides margin of safety calculation and valuation assessment.
+    Calculate and analyze PEG ratio using Lynch's methodology.
+    PEG < 1 is attractive, 1-2 is fair, >2 is expensive according to Lynch.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing intrinsic value analysis with valuation, margin of safety, and investment recommendation
+        Dict containing PEG analysis with valuation assessment
     """
     try:
         ticker = clean_ticker(ticker)
@@ -216,28 +104,18 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
         
         financial_line_items = search_line_items(
             ticker,
-            [
-                "net_income", "depreciation_and_amortization", "capital_expenditure",
-                "outstanding_shares", "revenue"
-            ],
+            ["earnings_per_share", "net_income", "book_value_per_share", "outstanding_shares"],
             end_date,
             period="annual",
             limit=5
         )
         
         market_cap = get_market_cap(ticker, end_date)
-        result = calculate_intrinsic_value(financial_line_items)
-        
-        # Add margin of safety calculation
-        margin_of_safety = None
-        if result.get("intrinsic_value") and market_cap:
-            margin_of_safety = (result["intrinsic_value"] - market_cap) / market_cap
-            result["margin_of_safety"] = margin_of_safety
-            result["market_cap"] = market_cap
+        result = analyze_lynch_valuation(financial_line_items, market_cap)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "peter_lynch_peg",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -245,23 +123,24 @@ def warren_buffett_intrinsic_value_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_intrinsic_value",
+            "analysis_type": "peter_lynch_peg",
             "error": str(e),
-            "result": {"intrinsic_value": None, "details": f"Error: {str(e)}"},
+            "result": {"score": 0, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
 @tool
-def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
+def peter_lynch_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
     """
-    Calculate owner earnings using Buffett's preferred earnings measure.
-    Owner Earnings = Net Income + Depreciation - Maintenance CapEx
+    Analyze fundamentals using Peter Lynch's criteria.
+    Focuses on debt levels, operating margins, and free cash flow.
+    Lynch prefers simple, understandable businesses with strong fundamentals.
     
     Args:
         ticker: Stock ticker symbol (e.g., TSLA, AAPL)
     
     Returns:
-        Dict containing owner earnings analysis with components and true earnings power assessment
+        Dict containing fundamentals analysis with financial health assessment
     """
     try:
         ticker = clean_ticker(ticker)
@@ -269,17 +148,20 @@ def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
         
         financial_line_items = search_line_items(
             ticker,
-            ["net_income", "depreciation_and_amortization", "capital_expenditure"],
+            [
+                "total_debt", "shareholders_equity", "operating_margin",
+                "gross_margin", "free_cash_flow", "operating_income"
+            ],
             end_date,
             period="annual",
             limit=5
         )
         
-        result = calculate_owner_earnings(financial_line_items)
+        result = analyze_lynch_fundamentals(financial_line_items)
         
         return {
             "ticker": ticker,
-            "analysis_type": "warren_buffett_owner_earnings",
+            "analysis_type": "peter_lynch_fundamentals",
             "result": result,
             "timestamp": datetime.now().isoformat()
         }
@@ -287,9 +169,79 @@ def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
     except Exception as e:
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
-            "analysis_type": "warren_buffett_owner_earnings",
+            "analysis_type": "peter_lynch_fundamentals",
             "error": str(e),
-            "result": {"owner_earnings": None, "details": f"Error: {str(e)}"},
+            "result": {"score": 0, "details": f"Error: {str(e)}"},
+            "timestamp": datetime.now().isoformat()
+        }
+
+@tool
+def peter_lynch_sentiment_analysis(ticker: str) -> Dict[str, Any]:
+    """
+    Analyze market sentiment and news flow for a stock.
+    Lynch considers market sentiment as a secondary factor in his analysis.
+    
+    Args:
+        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
+    
+    Returns:
+        Dict containing sentiment analysis from recent news
+    """
+    try:
+        ticker = clean_ticker(ticker)
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        
+        company_news = get_company_news(ticker, end_date, limit=50)
+        result = analyze_sentiment(company_news)
+        
+        return {
+            "ticker": ticker,
+            "analysis_type": "peter_lynch_sentiment",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
+            "analysis_type": "peter_lynch_sentiment",
+            "error": str(e),
+            "result": {"score": 5, "details": f"Error: {str(e)}"},
+            "timestamp": datetime.now().isoformat()
+        }
+
+@tool
+def peter_lynch_insider_activity_analysis(ticker: str) -> Dict[str, Any]:
+    """
+    Analyze insider trading activity using Lynch's approach.
+    Lynch pays attention to insider buying as a positive signal.
+    
+    Args:
+        ticker: Stock ticker symbol (e.g., TSLA, AAPL)
+    
+    Returns:
+        Dict containing insider activity analysis and signals
+    """
+    try:
+        ticker = clean_ticker(ticker)
+        end_date = datetime.now().strftime("%Y-%m-%d")
+        
+        insider_trades = get_insider_trades(ticker, end_date, limit=50)
+        result = analyze_insider_activity(insider_trades)
+        
+        return {
+            "ticker": ticker,
+            "analysis_type": "peter_lynch_insider",
+            "result": result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
+            "analysis_type": "peter_lynch_insider",
+            "error": str(e),
+            "result": {"score": 5, "details": f"Error: {str(e)}"},
             "timestamp": datetime.now().isoformat()
         }
 
@@ -347,24 +299,21 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         tool_name = serialized.get("name", "Unknown tool")
         
         # Create specific messages based on the tool type
-        if "fundamentals" in tool_name:
-            message = f"📊 Analyzing {input_str} fundamentals..."
-            details = "Calculating ROE, debt ratios, operating margins, and liquidity metrics"
-        elif "moat" in tool_name:
-            message = f"🏰 Evaluating {input_str} competitive moat..."
-            details = "Checking for durable competitive advantages and pricing power"
-        elif "consistency" in tool_name:
-            message = f"📈 Examining {input_str} earnings consistency..."
-            details = "Analyzing earnings stability and growth patterns over time"
-        elif "management" in tool_name:
-            message = f"👔 Assessing {input_str} management quality..."
-            details = "Evaluating capital allocation, dividends, and shareholder policies"
-        elif "intrinsic_value" in tool_name:
-            message = f"💰 Calculating {input_str} intrinsic value..."
-            details = "Running DCF model with owner earnings and margin of safety"
-        elif "owner_earnings" in tool_name:
-            message = f"💵 Computing {input_str} owner earnings..."
-            details = "Calculating true cash-generating ability of the business"
+        if "growth" in tool_name:
+            message = f"📈 Analyzing {input_str} growth potential..."
+            details = "Evaluating revenue and EPS growth trends for ten-bagger potential"
+        elif "peg" in tool_name:
+            message = f"💹 Calculating {input_str} PEG ratio..."
+            details = "Assessing growth at reasonable price (GARP) metrics"
+        elif "fundamentals" in tool_name:
+            message = f"📊 Examining {input_str} business fundamentals..."
+            details = "Checking debt levels, margins, and cash flow"
+        elif "sentiment" in tool_name:
+            message = f"📰 Analyzing {input_str} market sentiment..."
+            details = "Reviewing recent news and market perception"
+        elif "insider" in tool_name:
+            message = f"👥 Checking {input_str} insider activity..."
+            details = "Looking for insider buying or selling patterns"
         else:
             message = f"⚡ Running {tool_name} for {input_str}..."
             details = f"Performing analysis on {input_str}"
@@ -384,24 +333,21 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         details = "Processing results..."
         
         try:
-            if "ROE" in output and "debt" in output:
+            if "growth" in output and "revenue" in output:
+                message = "📈 Growth analysis complete"
+                details = "Revenue and earnings growth trends evaluated"
+            elif "PEG" in output or "P/E" in output:
+                message = "💹 Valuation metrics calculated"
+                details = "PEG ratio and valuation assessment complete"
+            elif "debt" in output and "margin" in output:
                 message = "📊 Fundamentals data collected"
-                details = "Found ROE, debt ratios, margins, and liquidity metrics"
-            elif "moat" in output or "score" in output:
-                message = "🏰 Moat analysis complete"
-                details = "Competitive advantage assessment finished"
-            elif "earnings" in output and "growth" in output:
-                message = "📈 Earnings patterns analyzed"
-                details = "Growth consistency evaluation complete"
-            elif "dilution" in output or "dividends" in output:
-                message = "👔 Management evaluation done"
-                details = "Capital allocation assessment complete"
-            elif "intrinsic_value" in output or "margin_of_safety" in output:
-                message = "💰 Valuation model complete"
-                details = "DCF calculation and margin of safety determined"
-            elif "owner_earnings" in output:
-                message = "💵 Owner earnings calculated"
-                details = "True cash-generating ability assessed"
+                details = "Financial health metrics analyzed"
+            elif "sentiment" in output and "news" in output:
+                message = "📰 Sentiment analysis done"
+                details = "Market perception assessment complete"
+            elif "insider" in output and "trades" in output:
+                message = "👥 Insider activity reviewed"
+                details = "Insider trading patterns analyzed"
         except:
             pass  # Use default message if parsing fails
             
@@ -417,12 +363,12 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         # Vary the thinking messages to be more specific
         thinking_messages = [
-            "🤔 Warren Buffett is evaluating the analysis...",
-            "🤔 Considering investment implications...",
-            "🤔 Weighing the risk-reward balance...",
-            "🤔 Applying value investing principles...",
-            "🤔 Synthesizing financial data...",
-            "🤔 Determining next analysis step..."
+            "🤔 Peter Lynch is evaluating the growth story...",
+            "🤔 Considering the PEG ratio and valuation...",
+            "🤔 Looking for ten-bagger potential...",
+            "🤔 Applying GARP principles...",
+            "🤔 Analyzing business simplicity...",
+            "🤔 Determining investment opportunity..."
         ]
         
         # Use step to rotate through different messages
@@ -430,7 +376,7 @@ class StreamingCallbackHandler(BaseCallbackHandler):
         
         self._send_event_sync("llm_thinking", {
             "message": thinking_messages[message_index],
-            "details": "Processing data with Buffett's investment criteria",
+            "details": "Processing data with Lynch's growth investing criteria",
             "step": self.current_step
         })
     
@@ -446,19 +392,9 @@ class StreamingCallbackHandler(BaseCallbackHandler):
                     "message": f"💭 Thought: {thought}",
                     "details": "Deciding next action..."
                 })
-    
-    def on_text(self, text: str, **kwargs) -> Any:
-        """Called when agent produces text."""
-        if "Thought:" in text:
-            thought = text.split("Thought:")[1].split("\n")[0].strip()
-            self._send_event_sync("agent_thinking", {
-                "thought": thought,
-                "message": f"💭 {thought}",
-                "details": "Processing analysis logic..."
-            })
 
-class WarrenBuffettChatAgent:
-    """Warren Buffett specialized chat agent for value investing analysis."""
+class PeterLynchChatAgent:
+    """Peter Lynch specialized chat agent for growth at reasonable price (GARP) analysis."""
     
     def __init__(self, model_name: str = "gpt-4o-mini", model_provider: str = "openai"):
         self.model_name = model_name
@@ -470,42 +406,44 @@ class WarrenBuffettChatAgent:
             raise ValueError(f"Failed to initialize model: {model_name} with provider: {model_provider}")
         
         # Import the existing tools
-        from app.backend.services.warren_buffett_chat_agent import (
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+        from app.backend.services.peter_lynch_chat_agent import (
+            peter_lynch_growth_analysis,
+            peter_lynch_peg_analysis,
+            peter_lynch_fundamentals_analysis,
+            peter_lynch_sentiment_analysis,
+            peter_lynch_insider_activity_analysis
         )
         
         self.tools = [
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+            peter_lynch_growth_analysis,
+            peter_lynch_peg_analysis,
+            peter_lynch_fundamentals_analysis,
+            peter_lynch_sentiment_analysis,
+            peter_lynch_insider_activity_analysis
         ]
         
-        # Create prompt (reuse existing one)
-        template = """You are Warren Buffett, the legendary value investor and chairman of Berkshire Hathaway. You are known for your long-term investment philosophy, focus on intrinsic value, and ability to identify companies with strong competitive moats.
+        # Create prompt
+        template = """You are Peter Lynch, the legendary fund manager who ran Fidelity's Magellan Fund from 1977 to 1990, achieving an average annual return of 29.2%. You are known for your "invest in what you know" philosophy and ability to find "ten-baggers" (stocks that increase 10x in value).
 
 Your investment philosophy includes:
-- Focus on businesses you can understand
-- Look for companies with sustainable competitive advantages (economic moats)
-- Buy at prices below intrinsic value (margin of safety)
-- Think like an owner, not a trader
-- Favor consistent, predictable earnings
-- Prefer companies with excellent management
-- Be patient and disciplined
+- Invest in what you know and understand
+- Look for growth at a reasonable price (GARP)
+- Focus on PEG ratio (P/E to growth rate) - under 1.0 is attractive
+- Prefer simple, understandable businesses
+- Look for companies with room to grow
+- Consider different categories: slow growers, stalwarts, fast growers, cyclicals, turnarounds, asset plays
+- Pay attention to insider buying
+- Be willing to invest in boring or unpopular companies if fundamentals are strong
 
 When analyzing companies, you consider:
-- Business fundamentals (ROE, margins, debt levels)
-- Competitive moat strength and durability  
-- Earnings consistency and predictability
-- Management quality and capital allocation
-- Intrinsic value calculation and margin of safety
+- Revenue and earnings growth consistency
+- PEG ratio and valuation metrics
+- Business simplicity and competitive position
+- Debt levels and financial health
+- Insider activity and market sentiment
+- Potential for multi-bagger returns
 
-You should respond in Warren Buffett's characteristic style - folksy, using analogies, referring to business principles, and focusing on long-term value creation.
+You should respond in Peter Lynch's characteristic style - practical, down-to-earth, using everyday analogies, and focusing on common sense investing principles. Reference your experience managing the Magellan Fund when relevant.
 
 TOOLS:
 ------
@@ -554,14 +492,14 @@ Thought: {agent_scratchpad}"""
     
     async def analyze(self, query: str, chat_history: List = None) -> Dict[str, Any]:
         """
-        Process a natural language financial analysis query with Warren Buffett's perspective.
+        Process a natural language financial analysis query with Peter Lynch's perspective.
         
         Args:
-            query: Natural language query (e.g., "What do you think about Apple's moat?")
+            query: Natural language query (e.g., "Is Apple a good growth stock?")
             chat_history: Previous conversation messages
             
         Returns:
-            Dict containing analysis results and Buffett-style response
+            Dict containing analysis results and Lynch-style response
         """
         try:
             # Execute the agent
@@ -575,7 +513,7 @@ Thought: {agent_scratchpad}"""
                 "intermediate_steps": result.get("intermediate_steps", []),
                 "success": True,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "peter_lynch"
             }
             
         except Exception as e:
@@ -584,7 +522,7 @@ Thought: {agent_scratchpad}"""
                 "error": str(e),
                 "success": False,
                 "timestamp": datetime.now().isoformat(),
-                "agent": "warren_buffett"
+                "agent": "peter_lynch"
             }
         
     async def analyze_streaming(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
@@ -637,9 +575,9 @@ Thought: {agent_scratchpad}"""
         initial_event = {
             "type": "start",
             "data": {
-                "message": "🎯 Starting Warren Buffett analysis...",
+                "message": "🎯 Starting Peter Lynch GARP analysis...",
                 "query": query,
-                "agent": "warren_buffett"
+                "agent": "peter_lynch"
             },
             "timestamp": datetime.now().isoformat()
         }
@@ -654,13 +592,13 @@ Thought: {agent_scratchpad}"""
             except asyncio.TimeoutError:
                 # Send contextual heartbeat to keep connection alive
                 heartbeat_messages = [
-                    "⏳ Retrieving financial data from market sources...",
-                    "⏳ Cross-referencing industry benchmarks...",
-                    "⏳ Applying Buffett's investment criteria...",
-                    "⏳ Calculating complex financial metrics...",
-                    "⏳ Evaluating long-term business prospects...",
-                    "⏳ Assessing management track record...",
-                    "⏳ Comparing to similar investments..."
+                    "⏳ Searching for growth opportunities...",
+                    "⏳ Calculating PEG ratios...",
+                    "⏳ Evaluating business fundamentals...",
+                    "⏳ Looking for ten-bagger potential...",
+                    "⏳ Checking insider activity...",
+                    "⏳ Analyzing growth consistency...",
+                    "⏳ Comparing to industry peers..."
                 ]
                 
                 import random
@@ -679,7 +617,7 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "response": result["output"],
                     "success": True,
-                    "agent": "warren_buffett"
+                    "agent": "peter_lynch"
                 },
                 "timestamp": datetime.now().isoformat()
             }
@@ -690,62 +628,32 @@ Thought: {agent_scratchpad}"""
                 "data": {
                     "error": str(e),
                     "success": False,
-                    "agent": "warren_buffett"
+                    "agent": "peter_lynch"
                 },
                 "timestamp": datetime.now().isoformat()
             }
             yield json.dumps(error_event)
 
-    async def analyze_streaming_v2(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
-        """
-        Stream the final response from the Warren Buffett agent token by token.
-        This is compatible with the Vercel AI SDK's useChat hook.
-        """
-        # Get the full response from the existing `analyze` method
-        # We can reuse the logic without duplicating it
-        result = await self.analyze(query, chat_history)
-        
-        # Simulate a streaming effect for the final response text
-        # In a real scenario, you would use the streaming capabilities of the LLM
-        response_text = result.get("response", "No response generated.")
-        
-        # Get the underlying LLM with streaming enabled
-        streaming_llm = get_model(
-            self.model_name,
-            self.model_provider,
-            streaming=True
-        )
-
-        # Create a simple prompt to generate the final response in a streaming way
-        messages = [
-            SystemMessage(content="You are a helpful assistant."),
-            HumanMessage(content=f"Based on the following analysis, provide a comprehensive answer as Warren Buffett:\n\n{response_text}")
-        ]
-
-        # Stream the response from the LLM
-        async for chunk in streaming_llm.astream(messages):
-            yield chunk.content
-
 # Global agent instance with lazy initialization
-_warren_buffett_agent = None
+_peter_lynch_agent = None
 
-def get_warren_buffett_agent():
-    """Get or create the Warren Buffett chat agent instance."""
-    global _warren_buffett_agent
-    if _warren_buffett_agent is None:
-        _warren_buffett_agent = WarrenBuffettChatAgent()
-    return _warren_buffett_agent
+def get_peter_lynch_agent():
+    """Get or create the Peter Lynch chat agent instance."""
+    global _peter_lynch_agent
+    if _peter_lynch_agent is None:
+        _peter_lynch_agent = PeterLynchChatAgent()
+    return _peter_lynch_agent
 
-async def process_warren_buffett_query(query: str, chat_history: List = None) -> Dict[str, Any]:
+async def process_peter_lynch_query(query: str, chat_history: List = None) -> Dict[str, Any]:
     """
-    Process a natural language query using Warren Buffett's investment approach.
+    Process a natural language query using Peter Lynch's GARP approach.
     
     Args:
         query: Natural language query about stocks or investing
         chat_history: Previous conversation messages
         
     Returns:
-        Dict containing Warren Buffett's analysis and response
+        Dict containing Peter Lynch's analysis and response
     """
-    agent = get_warren_buffett_agent()
+    agent = get_peter_lynch_agent()
     return await agent.analyze(query, chat_history) 
