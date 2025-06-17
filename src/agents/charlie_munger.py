@@ -49,14 +49,13 @@ def charlie_munger_agent(state: AgentState):
             selected_agents=["charlie_munger"]
         )
     
-    
     # Create session metadata for tracing
     session_metadata = create_agent_session_metadata(
         session_id=session_id,
         agent_name="charlie_munger",
         tickers=tickers,
-        model_name=model_name,
-        model_provider=model_provider,
+        model_name=state["metadata"]["model_name"],
+        model_provider=state["metadata"]["model_provider"],
         metadata={
             "investment_style": "value_investing",
             "key_metrics": ["moat_strength", "management_quality", "predictability"]
@@ -233,6 +232,11 @@ def charlie_munger_agent(state: AgentState):
     }
 
 
+@traceable(
+    name="analyze_moat_strength",
+    tags=["charlie_munger", "moat_analysis", "competitive_advantage"],
+    metadata={"analysis_type": "moat_strength", "focus": "competitive_advantage"}
+)
 def analyze_moat_strength(metrics: list, financial_line_items: list) -> dict:
     """
     Analyze the business's competitive advantage using Munger's approach:
@@ -339,6 +343,11 @@ def analyze_moat_strength(metrics: list, financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="analyze_management_quality",
+    tags=["charlie_munger", "management_quality", "capital_allocation"],
+    metadata={"analysis_type": "management_quality", "focus": "capital_allocation"}
+)
 def analyze_management_quality(financial_line_items: list, insider_trades: list) -> dict:
     """
     Evaluate management quality using Munger's criteria:
@@ -499,6 +508,11 @@ def analyze_management_quality(financial_line_items: list, insider_trades: list)
     }
 
 
+@traceable(
+    name="analyze_predictability",
+    tags=["charlie_munger", "predictability", "business_consistency"],
+    metadata={"analysis_type": "predictability", "focus": "business_consistency"}
+)
 def analyze_predictability(financial_line_items: list) -> dict:
     """
     Assess the predictability of the business - Munger strongly prefers businesses
@@ -617,6 +631,11 @@ def analyze_predictability(financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="calculate_munger_valuation",
+    tags=["charlie_munger", "valuation", "intrinsic_value"],
+    metadata={"analysis_type": "valuation", "focus": "intrinsic_value"}
+)
 def calculate_munger_valuation(financial_line_items: list, market_cap: float) -> dict:
     """
     Calculate intrinsic value using Munger's approach:
@@ -725,6 +744,11 @@ def calculate_munger_valuation(financial_line_items: list, market_cap: float) ->
     }
 
 
+@traceable(
+    name="analyze_news_sentiment",
+    tags=["charlie_munger", "news_analysis", "sentiment"],
+    metadata={"analysis_type": "news_sentiment", "focus": "qualitative_analysis"}
+)
 def analyze_news_sentiment(news_items: list) -> str:
     """
     Simple qualitative analysis of recent news.
@@ -737,6 +761,11 @@ def analyze_news_sentiment(news_items: list) -> str:
     return f"Qualitative review of {len(news_items)} recent news items would be needed"
 
 
+@traceable(
+    name="generate_munger_output",
+    tags=["charlie_munger", "llm_reasoning", "investment_decision"],
+    metadata={"analysis_type": "final_decision", "method": "llm_synthesis"}
+)
 def generate_munger_output(
     ticker: str,
     analysis_data: dict[str, any],
