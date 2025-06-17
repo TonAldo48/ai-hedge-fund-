@@ -14,6 +14,19 @@ class ErrorResponse(BaseModel):
     error: str | None = None
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    timestamp: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    response: str
+    success: bool
+    timestamp: str
+    agent: Optional[str] = None
+
+
 class HedgeFundRequest(BaseModel):
     tickers: List[str]
     selected_agents: List[str]

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warren Buffett AI - Streaming Analysis Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chat-container {
+            width: 90%;
+            max-width: 800px;
+            height: 80vh;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .chat-header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .user-message {
+            text-align: right;
+        }
+        
+        .user-message .bubble {
+            background: #007bff;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 18px 18px 4px 18px;
+            display: inline-block;
+            max-width: 70%;
+        }
+        
+        .bot-message .bubble {
+            background: white;
+            color: #333;
+            padding: 12px 16px;
+            border-radius: 18px 18px 18px 4px;
+            display: inline-block;
+            max-width: 70%;
+            border: 1px solid #e9ecef;
+        }
+        
+        .status-message {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .status-bubble {
+            background: #f8f9fa;
+            color: #6c757d;
+            padding: 8px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            font-size: 13px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .thinking {
+            opacity: 0.7;
+            font-style: italic;
+        }
+        
+        .action {
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .tool {
+            color: #fd7e14;
+            font-weight: 500;
+        }
+        
+        .error {
+            color: #dc3545;
+            font-weight: 500;
+        }
+        
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            background: white;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #queryInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        #queryInput:focus {
+            border-color: #007bff;
+        }
+        
+        #sendBtn {
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        #sendBtn:hover:not(:disabled) {
+            background: #0056b3;
+        }
+        
+        #sendBtn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+        }
+        
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+        
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .preset-queries {
+            margin-bottom: 15px;
+        }
+        
+        .preset-btn {
+            background: #e9ecef;
+            border: none;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🎯 Warren Buffett AI Analyst</h1>
+            <p>Streaming Investment Analysis • Real-time Decision Making</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="bubble">
+                    Hello! I'm your Warren Buffett AI analyst. I'll walk you through my entire thought process as I analyze any stock you're interested in. Ask me about any company's fundamentals, competitive moat, valuation, or investment potential.
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <div class="preset-queries">
+                <button class="preset-btn" onclick="setQuery('What do you think about Tesla as a long-term investment?')">Tesla Analysis</button>
+                <button class="preset-btn" onclick="setQuery('How strong is Apple\'s competitive moat?')">Apple Moat</button>
+                <button class="preset-btn" onclick="setQuery('Should I invest in Microsoft right now?')">Microsoft Investment</button>
+                <button class="preset-btn" onclick="setQuery('What\'s Amazon\'s intrinsic value?')">Amazon Valuation</button>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="queryInput" placeholder="Ask Warren Buffett about any stock..." />
+                <button id="sendBtn" onclick="sendQuery()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAnalyzing = false;
+        
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+        
+        function addMessage(content, type = 'bot', className = '') {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            if (type === 'status') {
+                messageDiv.innerHTML = `<div class="status-bubble ${className}">${content}</div>`;
+            } else {
+                messageDiv.innerHTML = `<div class="bubble">${content}</div>`;
+            }
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return messageDiv;
+        }
+        
+        function formatTimestamp(timestamp) {
+            try {
+                const date = new Date(timestamp);
+                return date.toLocaleTimeString();
+            } catch {
+                return '';
+            }
+        }
+        
+        async function sendQuery() {
+            const input = document.getElementById('queryInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const query = input.value.trim();
+            
+            if (!query || isAnalyzing) return;
+            
+            // Add user message
+            addMessage(query, 'user');
+            
+            // Clear input and disable button
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Analyzing...';
+            isAnalyzing = true;
+            
+            try {
+                // In a real app, you'd call your API endpoint
+                // For demo purposes, we'll simulate the streaming
+                await simulateStreaming(query);
+                
+            } catch (error) {
+                addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
+            }
+            
+            // Re-enable input
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+            isAnalyzing = false;
+        }
+        
+        async function simulateStreaming(query) {
+            // Simulate the streaming events that would come from your API
+            const events = [
+                { type: 'start', data: { message: '🎯 Starting Warren Buffett analysis...' } },
+                { type: 'llm_thinking', data: { message: '🤔 Warren Buffett is thinking...' } },
+                { type: 'llm_thought', data: { thought: 'I need to analyze this company\'s fundamentals first' } },
+                { type: 'agent_action', data: { tool: 'warren_buffett_fundamentals_analysis', tool_input: 'TSLA' } },
+                { type: 'tool_start', data: { tool_name: 'Fundamentals Analysis', input: 'TSLA' } },
+                { type: 'tool_end', data: { output: 'ROE: 10.4%, Debt-to-Equity: 0.7, Operating Margin: 9.5%' } },
+                { type: 'llm_thought', data: { thought: 'Now let me check the competitive moat strength' } },
+                { type: 'agent_action', data: { tool: 'warren_buffett_moat_analysis', tool_input: 'TSLA' } },
+                { type: 'tool_start', data: { tool_name: 'Moat Analysis', input: 'TSLA' } },
+                { type: 'tool_end', data: { output: 'Score: 0/3 - ROE not consistently above 15%' } },
+                { type: 'llm_thought', data: { thought: 'I should also examine earnings consistency' } },
+                { type: 'agent_action', data: { tool: 'warren_buffett_consistency_analysis', tool_input: 'TSLA' } },
+                { type: 'tool_start', data: { tool_name: 'Consistency Analysis', input: 'TSLA' } },
+                { type: 'tool_end', data: { output: 'Inconsistent earnings growth pattern; 897.9% total growth' } },
+                { type: 'llm_thought', data: { thought: 'Finally, let me calculate the intrinsic value' } },
+                { type: 'agent_action', data: { tool: 'warren_buffett_intrinsic_value_analysis', tool_input: 'TSLA' } },
+                { type: 'tool_start', data: { tool_name: 'Intrinsic Value Analysis', input: 'TSLA' } },
+                { type: 'tool_end', data: { output: 'Intrinsic Value: $344.8B, Market Cap: $993.9B, Margin of Safety: -65%' } },
+                { type: 'complete', data: { 
+                    response: `Tesla presents an interesting case, but from my value investing perspective, I see several concerns. The company's fundamentals show a weak ROE of 10.4% and inconsistent earnings growth, despite impressive total growth of 897.9% over the past decade. 
+
+Most concerning is the lack of a durable competitive moat - Tesla's margins and returns don't meet my threshold of consistent excellence. The intrinsic value analysis suggests the stock is significantly overvalued, with a negative 65% margin of safety.
+
+While Tesla is certainly at the forefront of transformative technology, the current valuation doesn't provide the margin of safety I look for. As I always say, "Price is what you pay, value is what you get." At these levels, you're paying a premium price for uncertain future value.
+
+For a long-term value investor, I'd wait for a more attractive entry point or look for companies with more predictable earnings and stronger competitive positions.`
+                }}
+            ];
+            
+            for (const event of events) {
+                await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
+                displayStreamingEvent(event);
+            }
+        }
+        
+        function displayStreamingEvent(event) {
+            const { type, data } = event;
+            
+            switch (type) {
+                case 'start':
+                    addMessage(data.message, 'status', 'action');
+                    break;
+                    
+                case 'llm_thinking':
+                    addMessage(data.message, 'status', 'thinking');
+                    break;
+                    
+                case 'llm_thought':
+                    addMessage(`💡 Thought: ${data.thought}`, 'status', 'thinking');
+                    break;
+                    
+                case 'agent_action':
+                    addMessage(`🔧 Using: ${data.tool.replace('warren_buffett_', '').replace('_', ' ')}`, 'status', 'action');
+                    break;
+                    
+                case 'tool_start':
+                    addMessage(`⚡ Running ${data.tool_name} for ${data.input}...`, 'status', 'tool');
+                    break;
+                    
+                case 'tool_end':
+                    addMessage(`📊 Data: ${data.output}`, 'status', 'tool');
+                    break;
+                    
+                case 'complete':
+                    addMessage(data.response, 'bot');
+                    break;
+                    
+                case 'error':
+                    addMessage(data.error, 'status', 'error');
+                    break;
+            }
+        }
+        
+        // Enable Enter key to send
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !isAnalyzing) {
+                sendQuery();
+            }
+        });
+        
+        // Real implementation would connect to your streaming endpoint like this:
+        /*
+        async function realStreaming(query) {
+            const response = await fetch('/warren-buffett/analyze-streaming', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'your-api-key'
+                },
+                body: JSON.stringify({
+                    query: query,
+                    chat_history: []
+                })
+            });
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const text = decoder.decode(value);
+                const lines = text.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const eventData = JSON.parse(line.slice(6));
+                        displayStreamingEvent(eventData);
+                    }
+                }
+            }
+        }
+        */
+    </script>
+</body>
+</html> 
