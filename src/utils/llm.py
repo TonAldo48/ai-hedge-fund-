@@ -3,12 +3,18 @@
 import json
 from typing import TypeVar, Type, Optional, Any
 from pydantic import BaseModel
+from langsmith import traceable
 from src.llm.models import get_model, get_model_info
 from src.utils.progress import progress
+from src.utils.tracing import get_tracing_enabled
 
 T = TypeVar("T", bound=BaseModel)
 
 
+@traceable(
+    name="llm_call",
+    tags=["llm", "structured_output", "hedge_fund"]
+)
 def call_llm(
     prompt: Any,
     model_name: str,
@@ -20,6 +26,8 @@ def call_llm(
 ) -> T:
     """
     Makes an LLM call with retry logic, handling both JSON supported and non-JSON supported models.
+    
+    This function is automatically traced by LangSmith when tracing is enabled.
 
     Args:
         prompt: The prompt to send to the LLM
@@ -33,6 +41,16 @@ def call_llm(
     Returns:
         An instance of the specified Pydantic model
     """
+    
+    # Add tracing metadata if enabled
+    tracing_metadata = {
+        "model_name": model_name,
+        "model_provider": model_provider,
+        "agent_name": agent_name,
+        "pydantic_model": pydantic_model.__name__,
+        "max_retries": max_retries,
+        "tracing_enabled": get_tracing_enabled()
+    }
 
     model_info = get_model_info(model_name, model_provider)
     llm = get_model(model_name, model_provider)

@@ -7,6 +7,8 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 import math
 
 
@@ -27,9 +29,29 @@ def ben_graham_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["ben_graham"]
+        )
 
     analysis_data = {}
     graham_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("ben_graham")
 
     for ticker in tickers:
         progress.update_status("ben_graham_agent", ticker, "Fetching financial metrics")
@@ -51,19 +73,46 @@ def ben_graham_agent(state: AgentState):
         progress.update_status("ben_graham_agent", ticker, "Analyzing Graham valuation")
         valuation_analysis = analyze_valuation_graham(financial_line_items, market_cap)
 
-        # Aggregate scoring
-        total_score = earnings_analysis["score"] + strength_analysis["score"] + valuation_analysis["score"]
-        max_possible_score = 15  # total possible from the three analysis functions
+        # Normalize scores and apply weights from registry
+        # margin_of_safety comes from valuation_analysis
+        # financial_strength from strength_analysis
+        # earnings_stability from earnings_analysis
+        
+        # Max scores from each analysis function:
+        # earnings_analysis: max 4
+        # strength_analysis: max 5
+        # valuation_analysis: max 7
+        
+        earnings_score = earnings_analysis["score"] / 4 * 10  # Normalize to 0-10
+        strength_score = strength_analysis["score"] / 5 * 10  # Normalize to 0-10
+        valuation_score = valuation_analysis["score"] / 7 * 10  # Normalize to 0-10
+        
+        # Apply weights
+        total_score = (
+            valuation_score * current_weights["margin_of_safety"] +
+            strength_score * current_weights["financial_strength"] +
+            earnings_score * current_weights["earnings_stability"]
+        )
+        
+        max_possible_score = 10
 
         # Map total_score to signal
-        if total_score >= 0.7 * max_possible_score:
+        if total_score >= 7.0:
             signal = "bullish"
-        elif total_score <= 0.3 * max_possible_score:
+        elif total_score <= 4.0:
             signal = "bearish"
         else:
             signal = "neutral"
 
-        analysis_data[ticker] = {"signal": signal, "score": total_score, "max_score": max_possible_score, "earnings_analysis": earnings_analysis, "strength_analysis": strength_analysis, "valuation_analysis": valuation_analysis}
+        analysis_data[ticker] = {
+            "signal": signal,
+            "score": total_score,
+            "max_score": max_possible_score,
+            "earnings_analysis": earnings_analysis,
+            "strength_analysis": strength_analysis,
+            "valuation_analysis": valuation_analysis,
+            "weights_used": current_weights  # Store weights used
+        }
 
         progress.update_status("ben_graham_agent", ticker, "Generating Ben Graham analysis")
         graham_output = generate_graham_output(
@@ -73,7 +122,45 @@ def ben_graham_agent(state: AgentState):
             model_provider=state["metadata"]["model_provider"],
         )
 
-        graham_analysis[ticker] = {"signal": graham_output.signal, "confidence": graham_output.confidence, "reasoning": graham_output.reasoning}
+        graham_analysis[ticker] = {
+            "signal": graham_output.signal,
+            "confidence": graham_output.confidence,
+            "reasoning": graham_output.reasoning
+        }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="ben_graham",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=graham_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="ben_graham",
+            ticker=ticker,
+            function_name="analyze_earnings_stability",
+            score=earnings_analysis["score"],
+            max_score=4,
+            details=earnings_analysis["details"],
+            function_data=earnings_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="ben_graham",
+            ticker=ticker,
+            function_name="analyze_financial_strength",
+            score=strength_analysis["score"],
+            max_score=5,
+            details=strength_analysis["details"],
+            function_data=strength_analysis
+        )
 
         progress.update_status("ben_graham_agent", ticker, "Done", analysis=graham_output.reasoning)
 

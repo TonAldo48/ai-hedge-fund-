@@ -11,6 +11,8 @@ import json
 from langchain_core.messages import HumanMessage
 from src.graph.state import AgentState, show_agent_reasoning
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 from src.tools.api import (
     get_financial_metrics,
@@ -24,8 +26,28 @@ def valuation_analyst_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["valuation_analyst"]
+        )
 
     valuation_analysis: dict[str, dict] = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("valuation_analyst")
 
     for ticker in tickers:
         progress.update_status("valuation_analyst_agent", ticker, "Fetching financial data")
@@ -104,11 +126,12 @@ def valuation_analyst_agent(state: AgentState):
             progress.update_status("valuation_analyst_agent", ticker, "Failed: Market cap unavailable")
             continue
 
+        # Use weights from registry
         method_values = {
-            "dcf": {"value": dcf_val, "weight": 0.35},
-            "owner_earnings": {"value": owner_val, "weight": 0.35},
-            "ev_ebitda": {"value": ev_ebitda_val, "weight": 0.20},
-            "residual_income": {"value": rim_val, "weight": 0.10},
+            "dcf": {"value": dcf_val, "weight": current_weights["dcf"]},
+            "owner_earnings": {"value": owner_val, "weight": current_weights["owner_earnings"]},
+            "ev_ebitda": {"value": ev_ebitda_val, "weight": current_weights["ev_ebitda"]},
+            "residual_income": {"value": rim_val, "weight": current_weights["residual_income"]},
         }
 
         total_weight = sum(v["weight"] for v in method_values.values() if v["value"] > 0)
@@ -125,6 +148,9 @@ def valuation_analyst_agent(state: AgentState):
 
         signal = "bullish" if weighted_gap > 0.15 else "bearish" if weighted_gap < -0.15 else "neutral"
         confidence = round(min(abs(weighted_gap) / 0.30 * 100, 100))
+        
+        # Calculate total score for tracking
+        total_score = min(10, (weighted_gap + 0.3) / 0.6 * 10)  # Map -0.3 to 0.3 range to 0-10
 
         reasoning = {
             f"{m}_analysis": {
@@ -144,7 +170,38 @@ def valuation_analyst_agent(state: AgentState):
             "signal": signal,
             "confidence": confidence,
             "reasoning": reasoning,
+            "weights_used": current_weights  # Store weights used
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="valuation_analyst",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=confidence
+        )
+        
+        # Record function-level analyses
+        for method_name, method_data in method_values.items():
+            if method_data["value"] > 0:
+                weight_tracker.record_function_analysis(
+                    session_id=session_id,
+                    agent_name="valuation_analyst",
+                    ticker=ticker,
+                    function_name=f"calculate_{method_name}_value",
+                    score=max(0, min(10, (method_data["gap"] + 0.3) / 0.6 * 10)) if method_data["gap"] else 5,
+                    max_score=10,
+                    details=f"Value: ${method_data['value']:,.2f}, Gap: {method_data['gap']:.1%}" if method_data["gap"] else "No gap calculated",
+                    function_data={
+                        "value": method_data["value"],
+                        "gap": method_data["gap"],
+                        "weight": method_data["weight"]
+                    }
+                )
+        
         progress.update_status("valuation_analyst_agent", ticker, "Done", analysis=json.dumps(reasoning, indent=4))
 
     # ---- Emit message (for LLM tool chain) ----

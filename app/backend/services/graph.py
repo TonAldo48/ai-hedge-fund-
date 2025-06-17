@@ -48,12 +48,12 @@ def create_graph(selected_agents: list[str]) -> StateGraph:
     return graph
 
 
-async def run_graph_async(graph, portfolio, tickers, start_date, end_date, model_name, model_provider, show_reasoning=False):
+async def run_graph_async(graph, portfolio, tickers, start_date, end_date, model_name, model_provider, show_reasoning=False, session_id=None):
     """Async wrapper for run_graph to work with asyncio."""
     # Use run_in_executor to run the synchronous function in a separate thread
     # so it doesn't block the event loop
     loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, lambda: run_graph(graph, portfolio, tickers, start_date, end_date, model_name, model_provider, show_reasoning))  # Use default executor
+    result = await loop.run_in_executor(None, lambda: run_graph(graph, portfolio, tickers, start_date, end_date, model_name, model_provider, show_reasoning, session_id))  # Use default executor
     return result
 
 
@@ -66,11 +66,12 @@ def run_graph(
     model_name: str,
     model_provider: str,
     show_reasoning: bool = False,
+    session_id: str = None,
 ) -> dict:
     """
     Run the graph with the given portfolio, tickers,
     start date, end date, show reasoning, model name,
-    and model provider.
+    model provider, and session ID for weight tracking.
     """
     return graph.invoke(
         {
@@ -91,6 +92,7 @@ def run_graph(
                 "model_name": model_name,
                 "model_provider": model_provider,
             },
+            "session_id": session_id,  # Pass session ID for weight tracking
         },
     )
 

@@ -1,4 +1,5 @@
 import sys
+import os
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
@@ -13,6 +14,7 @@ from src.utils.analysts import ANALYST_ORDER, get_analyst_nodes
 from src.utils.progress import progress
 from src.llm.models import LLM_ORDER, OLLAMA_LLM_ORDER, get_model_info, ModelProvider
 from src.utils.ollama import ensure_ollama_and_model
+from src.utils.tracing import setup_langsmith_tracing
 
 import argparse
 from datetime import datetime
@@ -22,6 +24,10 @@ import json
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize LangSmith tracing
+environment = os.getenv("ENVIRONMENT", "development")
+tracing_client = setup_langsmith_tracing(environment=environment)
 
 init(autoreset=True)
 
@@ -51,7 +57,12 @@ def run_hedge_fund(
     selected_analysts: list[str] = [],
     model_name: str = "gpt-4o",
     model_provider: str = "OpenAI",
+    session_id: str = None,
 ):
+    # Generate session ID if not provided
+    if not session_id:
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]}"
+    
     # Start progress tracking
     progress.start()
 
@@ -82,6 +93,7 @@ def run_hedge_fund(
                     "model_name": model_name,
                     "model_provider": model_provider,
                 },
+                "session_id": session_id,  # Pass session ID for weight tracking
             },
         )
 
@@ -317,5 +329,6 @@ if __name__ == "__main__":
         selected_analysts=selected_analysts,
         model_name=model_name,
         model_provider=model_provider,
+        session_id=None,
     )
     print_trading_output(result)

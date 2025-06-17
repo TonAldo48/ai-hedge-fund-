@@ -7,6 +7,8 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 
 class CathieWoodSignal(BaseModel):
@@ -26,9 +28,29 @@ def cathie_wood_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["cathie_wood"]
+        )
 
     analysis_data = {}
     cw_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("cathie_wood")
 
     for ticker in tickers:
         progress.update_status("cathie_wood_agent", ticker, "Fetching financial metrics")
@@ -69,18 +91,41 @@ def cathie_wood_agent(state: AgentState):
         progress.update_status("cathie_wood_agent", ticker, "Calculating valuation & high-growth scenario")
         valuation_analysis = analyze_cathie_wood_valuation(financial_line_items, market_cap)
 
-        # Combine partial scores or signals
-        total_score = disruptive_analysis["score"] + innovation_analysis["score"] + valuation_analysis["score"]
-        max_possible_score = 15  # Adjust weighting as desired
+        # Combine partial scores using weights from registry
+        # Note: disruptive_analysis and innovation_analysis already normalize to 5
+        # We need to map the component names correctly:
+        # disruptive_potential, revenue_growth, market_opportunity, innovation_score
+        
+        # Normalize valuation_analysis score to 0-10 scale
+        valuation_score = valuation_analysis["score"] / 3 * 10  # max valuation score is 3
+        
+        # Map analysis results to weight categories
+        total_score = (
+            disruptive_analysis["score"] / 5 * 10 * current_weights["disruptive_potential"] +
+            innovation_analysis["score"] / 5 * 10 * current_weights["revenue_growth"] +
+            valuation_score * current_weights["market_opportunity"] +
+            # For innovation_score, we'll use the average of disruptive and innovation analyses
+            ((disruptive_analysis["score"] + innovation_analysis["score"]) / 10 * 10) * current_weights["innovation_score"]
+        )
+        
+        max_possible_score = 10
 
-        if total_score >= 0.7 * max_possible_score:
+        if total_score >= 7.0:
             signal = "bullish"
-        elif total_score <= 0.3 * max_possible_score:
+        elif total_score <= 4.0:
             signal = "bearish"
         else:
             signal = "neutral"
 
-        analysis_data[ticker] = {"signal": signal, "score": total_score, "max_score": max_possible_score, "disruptive_analysis": disruptive_analysis, "innovation_analysis": innovation_analysis, "valuation_analysis": valuation_analysis}
+        analysis_data[ticker] = {
+            "signal": signal,
+            "score": total_score,
+            "max_score": max_possible_score,
+            "disruptive_analysis": disruptive_analysis,
+            "innovation_analysis": innovation_analysis,
+            "valuation_analysis": valuation_analysis,
+            "weights_used": current_weights  # Store weights used
+        }
 
         progress.update_status("cathie_wood_agent", ticker, "Generating Cathie Wood analysis")
         cw_output = generate_cathie_wood_output(
@@ -90,7 +135,45 @@ def cathie_wood_agent(state: AgentState):
             model_provider=state["metadata"]["model_provider"],
         )
 
-        cw_analysis[ticker] = {"signal": cw_output.signal, "confidence": cw_output.confidence, "reasoning": cw_output.reasoning}
+        cw_analysis[ticker] = {
+            "signal": cw_output.signal,
+            "confidence": cw_output.confidence,
+            "reasoning": cw_output.reasoning
+        }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="cathie_wood",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=cw_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="cathie_wood",
+            ticker=ticker,
+            function_name="analyze_disruptive_potential",
+            score=disruptive_analysis["score"],
+            max_score=5,
+            details=disruptive_analysis["details"],
+            function_data=disruptive_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="cathie_wood",
+            ticker=ticker,
+            function_name="analyze_innovation_growth",
+            score=innovation_analysis["score"],
+            max_score=5,
+            details=innovation_analysis["details"],
+            function_data=innovation_analysis
+        )
 
         progress.update_status("cathie_wood_agent", ticker, "Done", analysis=cw_output.reasoning)
 

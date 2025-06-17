@@ -4,6 +4,8 @@ from src.utils.progress import progress
 import pandas as pd
 import numpy as np
 import json
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 from src.tools.api import get_insider_trades, get_company_news
 
@@ -14,9 +16,29 @@ def sentiment_analyst_agent(state: AgentState):
     data = state.get("data", {})
     end_date = data.get("end_date")
     tickers = data.get("tickers")
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["sentiment_analyst"]
+        )
 
     # Initialize sentiment analysis for each ticker
     sentiment_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("sentiment_analyst")
 
     for ticker in tickers:
         progress.update_status("sentiment_analyst_agent", ticker, "Fetching insider trades")
@@ -45,9 +67,9 @@ def sentiment_analyst_agent(state: AgentState):
                               np.where(sentiment == "positive", "bullish", "neutral")).tolist()
         
         progress.update_status("sentiment_analyst_agent", ticker, "Combining signals")
-        # Combine signals from both sources with weights
-        insider_weight = 0.3
-        news_weight = 0.7
+        # Combine signals from both sources with weights from registry
+        insider_weight = current_weights["insider_weight"]
+        news_weight = current_weights["news_weight"]
         
         # Calculate weighted signal counts
         bullish_signals = (
@@ -72,12 +94,64 @@ def sentiment_analyst_agent(state: AgentState):
         if total_weighted_signals > 0:
             confidence = round((max(bullish_signals, bearish_signals) / total_weighted_signals) * 100, 2)
         reasoning = f"Weighted Bullish signals: {bullish_signals:.1f}, Weighted Bearish signals: {bearish_signals:.1f}"
+        
+        # Calculate total score for tracking
+        if overall_signal == "bullish":
+            total_score = confidence / 10  # Convert 0-100 to 0-10
+        elif overall_signal == "bearish":
+            total_score = (100 - confidence) / 10  # Invert for bearish
+        else:
+            total_score = 5.0  # Neutral
 
         sentiment_analysis[ticker] = {
             "signal": overall_signal,
             "confidence": confidence,
             "reasoning": reasoning,
+            "weights_used": current_weights  # Store weights used
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="sentiment_analyst",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=overall_signal,
+            confidence=confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="sentiment_analyst",
+            ticker=ticker,
+            function_name="analyze_insider_trades",
+            score=insider_signals.count("bullish") / max(len(insider_signals), 1) * 10,
+            max_score=10,
+            details=f"Bullish: {insider_signals.count('bullish')}, Bearish: {insider_signals.count('bearish')}",
+            function_data={
+                "bullish_count": insider_signals.count("bullish"),
+                "bearish_count": insider_signals.count("bearish"),
+                "total": len(insider_signals)
+            }
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="sentiment_analyst",
+            ticker=ticker,
+            function_name="analyze_news_sentiment",
+            score=news_signals.count("bullish") / max(len(news_signals), 1) * 10,
+            max_score=10,
+            details=f"Bullish: {news_signals.count('bullish')}, Bearish: {news_signals.count('bearish')}",
+            function_data={
+                "bullish_count": news_signals.count("bullish"),
+                "bearish_count": news_signals.count("bearish"),
+                "neutral_count": news_signals.count("neutral"),
+                "total": len(news_signals)
+            }
+        )
 
         progress.update_status("sentiment_analyst_agent", ticker, "Done", analysis=json.dumps(reasoning, indent=4))
 

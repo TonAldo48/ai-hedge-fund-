@@ -7,6 +7,7 @@ from typing import Optional
 from app.backend.models.schemas import BacktestRequest, BacktestResult, ErrorResponse
 from app.backend.services.backtester import backtest_manager, run_backtest_async
 from app.backend.middleware.auth import verify_api_key
+from src.utils.weight_manager import weight_tracker
 
 router = APIRouter(prefix="/backtest")
 
@@ -37,11 +38,28 @@ async def start_backtest(
         backtest_id = backtest_manager.create_session(request)
         session = backtest_manager.get_session(backtest_id)
         
+        # Generate weight tracking session ID
+        weight_session_id = f"backtest_{backtest_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Create weight tracking session
+        weight_tracker.create_session(
+            session_id=weight_session_id,
+            session_type="backtest",
+            tickers=request.tickers,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            selected_agents=request.selected_agents
+        )
+        
+        # Store weight session ID in the backtest session
+        session.weight_session_id = weight_session_id
+        
         # Start the backtest in background
         session.task = asyncio.create_task(run_backtest_async(session))
         
         return {
             "backtest_id": backtest_id,
+            "weight_session_id": weight_session_id,
             "status": "started",
             "message": "Backtest started successfully. Use the backtest_id to stream updates.",
             "stream_url": f"/backtest/stream/{backtest_id}",
@@ -86,11 +104,17 @@ async def stream_backtest(
                     
                     # If this is a completion event, break the loop
                     if hasattr(event, 'type') and event.type == "backtest_complete":
+                        # Mark weight tracking session as complete
+                        if hasattr(session, 'weight_session_id'):
+                            weight_tracker.complete_session(session.weight_session_id)
                         break
                         
                 except asyncio.TimeoutError:
                     # Check if the backtest is still running
                     if not session.is_running and session.result.status in ["completed", "failed"]:
+                        # Mark weight tracking session as complete
+                        if hasattr(session, 'weight_session_id'):
+                            weight_tracker.complete_session(session.weight_session_id)
                         break
                     # Send keepalive
                     yield "event: keepalive\ndata: {}\n\n"
@@ -127,6 +151,7 @@ async def get_backtest_status(
     
     return {
         "backtest_id": backtest_id,
+        "weight_session_id": getattr(session, 'weight_session_id', None),
         "status": session.result.status,
         "progress": session.result.progress,
         "current_date": session.result.current_date,
@@ -170,7 +195,20 @@ async def run_backtest_sync(
         if not request.selected_agents:
             raise HTTPException(status_code=400, detail="At least one agent must be selected")
         
-        # Create backtester
+        # Generate weight tracking session ID
+        weight_session_id = f"backtest_sync_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+        
+        # Create weight tracking session
+        weight_tracker.create_session(
+            session_id=weight_session_id,
+            session_type="backtest_sync",
+            tickers=request.tickers,
+            start_date=request.start_date,
+            end_date=request.end_date,
+            selected_agents=request.selected_agents
+        )
+        
+        # Create backtester with session ID
         backtester = Backtester(
             agent=run_hedge_fund,
             tickers=request.tickers,
@@ -180,11 +218,15 @@ async def run_backtest_sync(
             model_name=request.model_name,
             model_provider=request.model_provider.value,
             selected_analysts=request.selected_agents,
-            initial_margin_requirement=request.margin_requirement
+            initial_margin_requirement=request.margin_requirement,
+            session_id=weight_session_id  # Pass session ID
         )
         
         # Run the backtest
         performance_metrics = backtester.run_backtest()
+        
+        # Mark weight tracking session as complete
+        weight_tracker.complete_session(weight_session_id)
         
         # Calculate final performance
         final_value = backtester.portfolio_values[-1]["Portfolio Value"] if backtester.portfolio_values else request.initial_capital
@@ -192,6 +234,7 @@ async def run_backtest_sync(
         
         return {
             "status": "completed",
+            "weight_session_id": weight_session_id,
             "performance_metrics": {
                 "total_return": total_return,
                 "final_value": final_value,
@@ -238,6 +281,10 @@ async def cancel_backtest(
         session.task.cancel()
         session.result.status = "cancelled"
         session.is_running = False
+        
+        # Mark weight tracking session as complete
+        if hasattr(session, 'weight_session_id'):
+            weight_tracker.complete_session(session.weight_session_id)
     
     backtest_manager.cleanup_session(backtest_id)
     

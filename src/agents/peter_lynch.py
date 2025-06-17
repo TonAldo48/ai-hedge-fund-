@@ -14,6 +14,8 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 
 class PeterLynchSignal(BaseModel):
@@ -44,9 +46,19 @@ def peter_lynch_agent(state: AgentState):
     start_date = data["start_date"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
 
     analysis_data = {}
     lynch_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("peter_lynch")
 
     for ticker in tickers:
         progress.update_status("peter_lynch_agent", ticker, "Fetching financial metrics")
@@ -103,15 +115,13 @@ def peter_lynch_agent(state: AgentState):
         progress.update_status("peter_lynch_agent", ticker, "Analyzing insider activity")
         insider_activity = analyze_insider_activity(insider_trades)
 
-        # Combine partial scores with weights typical for Peter Lynch:
-        #   30% Growth, 25% Valuation, 20% Fundamentals,
-        #   15% Sentiment, 10% Insider Activity = 100%
+        # Calculate total score using current weights
         total_score = (
-            growth_analysis["score"] * 0.30
-            + valuation_analysis["score"] * 0.25
-            + fundamentals_analysis["score"] * 0.20
-            + sentiment_analysis["score"] * 0.15
-            + insider_activity["score"] * 0.10
+            growth_analysis["score"] * current_weights["growth"]
+            + valuation_analysis["score"] * current_weights["valuation"]
+            + fundamentals_analysis["score"] * current_weights["fundamentals"]
+            + sentiment_analysis["score"] * current_weights["sentiment"]
+            + insider_activity["score"] * current_weights["insider_activity"]
         )
 
         max_possible_score = 10.0
@@ -133,6 +143,7 @@ def peter_lynch_agent(state: AgentState):
             "fundamentals_analysis": fundamentals_analysis,
             "sentiment_analysis": sentiment_analysis,
             "insider_activity": insider_activity,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("peter_lynch_agent", ticker, "Generating Peter Lynch analysis")
@@ -148,6 +159,46 @@ def peter_lynch_agent(state: AgentState):
             "confidence": lynch_output.confidence,
             "reasoning": lynch_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=lynch_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            function_name="analyze_lynch_growth",
+            score=growth_analysis["score"],
+            max_score=10,
+            details=growth_analysis["details"],
+            function_data={
+                "score": growth_analysis["score"],
+                "details": growth_analysis["details"]
+            }
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            function_name="analyze_lynch_valuation",
+            score=valuation_analysis["score"],
+            max_score=10,
+            details=valuation_analysis["details"],
+            function_data={
+                "score": valuation_analysis["score"],
+                "details": valuation_analysis["details"]
+            }
+        )
 
         progress.update_status("peter_lynch_agent", ticker, "Done", analysis=lynch_output.reasoning)
 

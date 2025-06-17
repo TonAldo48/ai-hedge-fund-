@@ -39,6 +39,7 @@ class Backtester:
         model_provider: str = "OpenAI",
         selected_analysts: list[str] = [],
         initial_margin_requirement: float = 0.0,
+        session_id: str = None,
     ):
         """
         :param agent: The trading agent (Callable).
@@ -50,6 +51,7 @@ class Backtester:
         :param model_provider: Which LLM provider (OpenAI, etc).
         :param selected_analysts: List of analyst names or IDs to incorporate.
         :param initial_margin_requirement: The margin ratio (e.g. 0.5 = 50%).
+        :param session_id: Optional session ID for weight tracking.
         """
         self.agent = agent
         self.tickers = tickers
@@ -59,6 +61,7 @@ class Backtester:
         self.model_name = model_name
         self.model_provider = model_provider
         self.selected_analysts = selected_analysts
+        self.session_id = session_id
 
         # Initialize portfolio with support for long/short positions
         self.portfolio_values = []
@@ -350,6 +353,7 @@ class Backtester:
                 model_name=self.model_name,
                 model_provider=self.model_provider,
                 selected_analysts=self.selected_analysts,
+                session_id=self.session_id,  # Pass session ID for weight tracking
             )
             decisions = output["decisions"]
             analyst_signals = output["analyst_signals"]

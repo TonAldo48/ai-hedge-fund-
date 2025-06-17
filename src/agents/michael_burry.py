@@ -18,6 +18,7 @@ from src.tools.api import (
 )
 from src.utils.llm import call_llm
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 
 __all__ = [
     "MichaelBurrySignal",
@@ -48,12 +49,32 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
     data = state["data"]
     end_date: str = data["end_date"]  # YYYY‑MM‑DD
     tickers: list[str] = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["michael_burry"]
+        )
 
     # We look one year back for insider trades / news flow
     start_date = (datetime.fromisoformat(end_date) - timedelta(days=365)).date().isoformat()
 
     analysis_data: dict[str, dict] = {}
     burry_analysis: dict[str, dict] = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("michael_burry")
 
     for ticker in tickers:
         # ------------------------------------------------------------------
@@ -105,22 +126,24 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
         # ------------------------------------------------------------------
         # Aggregate score & derive preliminary signal
         # ------------------------------------------------------------------
+        # Normalize scores to 0-10 and apply weights from registry
+        value_score = value_analysis["score"] / value_analysis["max_score"] * 10
+        balance_sheet_score = balance_sheet_analysis["score"] / balance_sheet_analysis["max_score"] * 10
+        insider_score = insider_analysis["score"] / insider_analysis["max_score"] * 10
+        contrarian_score = contrarian_analysis["score"] / contrarian_analysis["max_score"] * 10
+        
         total_score = (
-            value_analysis["score"]
-            + balance_sheet_analysis["score"]
-            + insider_analysis["score"]
-            + contrarian_analysis["score"]
+            value_score * current_weights["value"] +
+            balance_sheet_score * current_weights["balance_sheet"] +
+            insider_score * current_weights["insider_activity"] +
+            contrarian_score * current_weights["contrarian_sentiment"]
         )
-        max_score = (
-            value_analysis["max_score"]
-            + balance_sheet_analysis["max_score"]
-            + insider_analysis["max_score"]
-            + contrarian_analysis["max_score"]
-        )
+        
+        max_score = 10
 
-        if total_score >= 0.7 * max_score:
+        if total_score >= 7.0:
             signal = "bullish"
-        elif total_score <= 0.3 * max_score:
+        elif total_score <= 4.0:
             signal = "bearish"
         else:
             signal = "neutral"
@@ -137,6 +160,7 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
             "insider_analysis": insider_analysis,
             "contrarian_analysis": contrarian_analysis,
             "market_cap": market_cap,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("michael_burry_agent", ticker, "Generating LLM output")
@@ -152,6 +176,40 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
             "confidence": burry_output.confidence,
             "reasoning": burry_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=burry_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            function_name="analyze_value",
+            score=value_analysis["score"],
+            max_score=value_analysis["max_score"],
+            details=value_analysis["details"],
+            function_data=value_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            function_name="analyze_balance_sheet",
+            score=balance_sheet_analysis["score"],
+            max_score=balance_sheet_analysis["max_score"],
+            details=balance_sheet_analysis["details"],
+            function_data=balance_sheet_analysis
+        )
 
         progress.update_status("michael_burry_agent", ticker, "Done", analysis=burry_output.reasoning)
 
