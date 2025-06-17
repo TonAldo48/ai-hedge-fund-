@@ -7,6 +7,10 @@ from typing_extensions import Literal
 from src.tools.api import get_financial_metrics, get_market_cap, search_line_items
 from src.utils.llm import call_llm
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class WarrenBuffettSignal(BaseModel):
@@ -15,15 +19,55 @@ class WarrenBuffettSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="warren_buffett_agent",
+    tags=["hedge_fund", "value_investing", "warren_buffett"],
+    metadata={"agent_type": "investment_analyst", "style": "buffett_value_investing"}
+)
 def warren_buffett_agent(state: AgentState):
     """Analyzes stocks using Buffett's principles and LLM reasoning."""
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["warren_buffett"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="warren_buffett",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "buffett_value_investing",
+            "key_metrics": ["ROE", "margin_of_safety", "economic_moat", "management_quality"]
+        }
+    )
 
     # Collect all analysis for LLM reasoning
     analysis_data = {}
     buffett_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("warren_buffett")
 
     for ticker in tickers:
         progress.update_status("warren_buffett_agent", ticker, "Fetching financial metrics")
