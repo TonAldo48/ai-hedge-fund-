@@ -9,6 +9,8 @@ from src.utils.progress import progress
 from src.utils.llm import call_llm
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class CathieWoodSignal(BaseModel):
@@ -17,6 +19,11 @@ class CathieWoodSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="cathie_wood_agent",
+    tags=["hedge_fund", "disruptive_innovation", "cathie_wood", "growth"],
+    metadata={"agent_type": "investment_analyst", "style": "disruptive_innovation"}
+)
 def cathie_wood_agent(state: AgentState):
     """
     Analyzes stocks using Cathie Wood's investing principles and LLM reasoning.
@@ -45,6 +52,21 @@ def cathie_wood_agent(state: AgentState):
             end_date=end_date,
             selected_agents=["cathie_wood"]
         )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="cathie_wood",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "disruptive_innovation",
+            "key_metrics": ["disruptive_potential", "revenue_growth", "market_opportunity", "innovation_score"]
+        }
+    )
 
     analysis_data = {}
     cw_analysis = {}
@@ -189,6 +211,11 @@ def cathie_wood_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_disruptive_potential",
+    tags=["cathie_wood", "disruptive_analysis", "innovation"],
+    metadata={"analysis_type": "disruptive_potential"}
+)
 def analyze_disruptive_potential(metrics: list, financial_line_items: list) -> dict:
     """
     Analyze whether the company has disruptive products, technology, or business model.
@@ -288,6 +315,11 @@ def analyze_disruptive_potential(metrics: list, financial_line_items: list) -> d
     return {"score": normalized_score, "details": "; ".join(details), "raw_score": score, "max_score": max_possible_score}
 
 
+@traceable(
+    name="analyze_innovation_growth",
+    tags=["cathie_wood", "innovation_analysis", "growth"],
+    metadata={"analysis_type": "innovation_growth"}
+)
 def analyze_innovation_growth(metrics: list, financial_line_items: list) -> dict:
     """
     Evaluate the company's commitment to innovation and potential for exponential growth.
@@ -396,6 +428,11 @@ def analyze_innovation_growth(metrics: list, financial_line_items: list) -> dict
     return {"score": normalized_score, "details": "; ".join(details), "raw_score": score, "max_score": max_possible_score}
 
 
+@traceable(
+    name="analyze_cathie_wood_valuation",
+    tags=["cathie_wood", "valuation_analysis", "growth_valuation"],
+    metadata={"analysis_type": "growth_valuation"}
+)
 def analyze_cathie_wood_valuation(financial_line_items: list, market_cap: float) -> dict:
     """
     Cathie Wood often focuses on long-term exponential growth potential. We can do
@@ -441,6 +478,11 @@ def analyze_cathie_wood_valuation(financial_line_items: list, market_cap: float)
     return {"score": score, "details": "; ".join(details), "intrinsic_value": intrinsic_value, "margin_of_safety": margin_of_safety}
 
 
+@traceable(
+    name="generate_cathie_wood_output",
+    tags=["cathie_wood", "llm_generation", "disruptive_innovation"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_cathie_wood_output(
     ticker: str,
     analysis_data: dict[str, any],

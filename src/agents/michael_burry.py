@@ -19,6 +19,8 @@ from src.tools.api import (
 from src.utils.llm import call_llm
 from src.utils.progress import progress
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 __all__ = [
     "MichaelBurrySignal",
@@ -43,6 +45,11 @@ class MichaelBurrySignal(BaseModel):
 ###############################################################################
 
 
+@traceable(
+    name="michael_burry_agent",
+    tags=["hedge_fund", "deep_value", "michael_burry", "contrarian"],
+    metadata={"agent_type": "investment_analyst", "style": "deep_value_contrarian"}
+)
 def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine here)
     """Analyse stocks using Michael Burry's deep‑value, contrarian framework."""
 
@@ -66,6 +73,21 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
             end_date=end_date,
             selected_agents=["michael_burry"]
         )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="michael_burry",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "deep_value_contrarian",
+            "key_metrics": ["FCF_yield", "EV_EBIT", "debt_equity", "insider_activity", "contrarian_sentiment"]
+        }
+    )
 
     # We look one year back for insider trades / news flow
     start_date = (datetime.fromisoformat(end_date) - timedelta(days=365)).date().isoformat()
@@ -240,6 +262,11 @@ def _latest_line_item(line_items: list):
 
 # ----- Value ----------------------------------------------------------------
 
+@traceable(
+    name="analyze_value",
+    tags=["michael_burry", "value_analysis", "deep_value"],
+    metadata={"analysis_type": "value_metrics"}
+)
 def _analyze_value(metrics, line_items, market_cap):
     """Free cash‑flow yield, EV/EBIT, other classic deep‑value metrics."""
 
@@ -288,6 +315,11 @@ def _analyze_value(metrics, line_items, market_cap):
 
 # ----- Balance sheet --------------------------------------------------------
 
+@traceable(
+    name="analyze_balance_sheet",
+    tags=["michael_burry", "balance_sheet", "financial_strength"],
+    metadata={"analysis_type": "balance_sheet"}
+)
 def _analyze_balance_sheet(metrics, line_items):
     """Leverage and liquidity checks."""
 
@@ -329,6 +361,11 @@ def _analyze_balance_sheet(metrics, line_items):
 
 # ----- Insider activity -----------------------------------------------------
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["michael_burry", "insider_trading", "catalyst"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def _analyze_insider_activity(insider_trades):
     """Net insider buying over the last 12 months acts as a hard catalyst."""
 
@@ -354,6 +391,11 @@ def _analyze_insider_activity(insider_trades):
 
 # ----- Contrarian sentiment -------------------------------------------------
 
+@traceable(
+    name="analyze_contrarian_sentiment",
+    tags=["michael_burry", "contrarian", "sentiment_analysis"],
+    metadata={"analysis_type": "contrarian_sentiment"}
+)
 def _analyze_contrarian_sentiment(news):
     """Very rough gauge: a wall of recent negative headlines can be a *positive* for a contrarian."""
 
@@ -383,6 +425,11 @@ def _analyze_contrarian_sentiment(news):
 # LLM generation
 ###############################################################################
 
+@traceable(
+    name="generate_burry_output",
+    tags=["michael_burry", "llm_generation", "deep_value"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def _generate_burry_output(
     ticker: str,
     analysis_data: dict,

@@ -16,6 +16,8 @@ from src.utils.progress import progress
 from src.utils.llm import call_llm
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class PeterLynchSignal(BaseModel):
@@ -27,6 +29,11 @@ class PeterLynchSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="peter_lynch_agent",
+    tags=["hedge_fund", "growth_investing", "peter_lynch", "GARP"],
+    metadata={"agent_type": "investment_analyst", "style": "growth_at_reasonable_price"}
+)
 def peter_lynch_agent(state: AgentState):
     """
     Analyzes stocks using Peter Lynch's investing principles:
@@ -53,6 +60,31 @@ def peter_lynch_agent(state: AgentState):
         # Generate a session ID if not provided
         session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            selected_agents=["peter_lynch"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="peter_lynch",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "growth_at_reasonable_price",
+            "key_metrics": ["PEG_ratio", "revenue_growth", "EPS_growth", "sentiment", "insider_activity"]
+        }
+    )
 
     analysis_data = {}
     lynch_analysis = {}
@@ -216,6 +248,11 @@ def peter_lynch_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_lynch_growth",
+    tags=["peter_lynch", "growth_analysis", "GARP"],
+    metadata={"analysis_type": "growth_metrics"}
+)
 def analyze_lynch_growth(financial_line_items: list) -> dict:
     """
     Evaluate growth based on revenue and EPS trends:
@@ -281,6 +318,11 @@ def analyze_lynch_growth(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_lynch_fundamentals",
+    tags=["peter_lynch", "fundamentals_analysis", "GARP"],
+    metadata={"analysis_type": "fundamentals"}
+)
 def analyze_lynch_fundamentals(financial_line_items: list) -> dict:
     """
     Evaluate basic fundamentals:
@@ -344,6 +386,11 @@ def analyze_lynch_fundamentals(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_lynch_valuation",
+    tags=["peter_lynch", "valuation_analysis", "PEG_ratio"],
+    metadata={"analysis_type": "valuation"}
+)
 def analyze_lynch_valuation(financial_line_items: list, market_cap: float | None) -> dict:
     """
     Peter Lynch's approach to 'Growth at a Reasonable Price' (GARP):
@@ -413,6 +460,11 @@ def analyze_lynch_valuation(financial_line_items: list, market_cap: float | None
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_sentiment",
+    tags=["peter_lynch", "sentiment_analysis", "news_analysis"],
+    metadata={"analysis_type": "sentiment"}
+)
 def analyze_sentiment(news_items: list) -> dict:
     """
     Basic news sentiment check. Negative headlines weigh on the final score.
@@ -444,6 +496,11 @@ def analyze_sentiment(news_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["peter_lynch", "insider_trading", "market_signals"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def analyze_insider_activity(insider_trades: list) -> dict:
     """
     Simple insider-trade analysis:
@@ -489,6 +546,11 @@ def analyze_insider_activity(insider_trades: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="generate_lynch_output",
+    tags=["peter_lynch", "llm_generation", "GARP"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_lynch_output(
     ticker: str,
     analysis_data: dict[str, any],

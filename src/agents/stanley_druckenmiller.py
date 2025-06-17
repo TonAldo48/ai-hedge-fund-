@@ -17,6 +17,8 @@ from src.utils.llm import call_llm
 import statistics
 from datetime import datetime, timedelta
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class StanleyDruckenmillerSignal(BaseModel):
@@ -25,6 +27,11 @@ class StanleyDruckenmillerSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="stanley_druckenmiller_agent",
+    tags=["hedge_fund", "macro_trading", "stanley_druckenmiller", "momentum"],
+    metadata={"agent_type": "investment_analyst", "style": "macro_momentum_trading"}
+)
 def stanley_druckenmiller_agent(state: AgentState):
     """
     Analyzes stocks using Stanley Druckenmiller's investing principles:
@@ -56,6 +63,21 @@ def stanley_druckenmiller_agent(state: AgentState):
             end_date=end_date,
             selected_agents=["stanley_druckenmiller"]
         )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="stanley_druckenmiller",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "macro_momentum_trading",
+            "key_metrics": ["growth_momentum", "risk_reward", "valuation", "sentiment", "insider_activity"]
+        }
+    )
 
     analysis_data = {}
     druck_analysis = {}
@@ -223,6 +245,11 @@ def stanley_druckenmiller_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_growth_and_momentum",
+    tags=["stanley_druckenmiller", "growth_analysis", "momentum"],
+    metadata={"analysis_type": "growth_momentum"}
+)
 def analyze_growth_and_momentum(financial_line_items: list, prices: list) -> dict:
     """
     Evaluate:
@@ -326,6 +353,11 @@ def analyze_growth_and_momentum(financial_line_items: list, prices: list) -> dic
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["stanley_druckenmiller", "insider_trading", "market_signals"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def analyze_insider_activity(insider_trades: list) -> dict:
     """
     Simple insider-trade analysis:
