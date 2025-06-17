@@ -97,10 +97,14 @@ async def stream_backtest(
     
     async def event_generator():
         try:
+            consecutive_timeouts = 0
+            max_consecutive_timeouts = 30  # 30 seconds of consecutive timeouts
+            
             while True:
                 # Wait for events from the backtest
                 try:
                     event = await asyncio.wait_for(session.event_queue.get(), timeout=1.0)
+                    consecutive_timeouts = 0  # Reset timeout counter
                     yield event.to_sse()
                     
                     # If this is a completion event, break the loop
@@ -111,12 +115,23 @@ async def stream_backtest(
                         break
                         
                 except asyncio.TimeoutError:
+                    consecutive_timeouts += 1
+                    
                     # Check if the backtest is still running
                     if not session.is_running and session.result.status in ["completed", "failed"]:
                         # Mark weight tracking session as complete
                         if hasattr(session, 'weight_session_id'):
                             weight_tracker.complete_session(session.weight_session_id)
+                        
+                        # Send final completion message and break
+                        yield f"event: backtest_complete\ndata: {{\"status\": \"{session.result.status}\", \"message\": \"Backtest completed\"}}\n\n"
                         break
+                    
+                    # If too many consecutive timeouts, assume the session is dead
+                    if consecutive_timeouts >= max_consecutive_timeouts:
+                        yield f"event: timeout\ndata: {{\"message\": \"Stream timeout - session may have ended\"}}\n\n"
+                        break
+                    
                     # Send keepalive
                     yield "event: keepalive\ndata: {}\n\n"
                     
@@ -124,7 +139,10 @@ async def stream_backtest(
             yield f"event: error\ndata: {{\"message\": \"Stream error: {str(e)}\"}}\n\n"
         finally:
             # Clean up the session after streaming completes
-            backtest_manager.cleanup_session(backtest_id)
+            try:
+                backtest_manager.cleanup_session(backtest_id)
+            except Exception as cleanup_error:
+                print(f"Error during session cleanup: {cleanup_error}")
     
     return StreamingResponse(
         event_generator(),
@@ -296,19 +314,56 @@ async def cancel_backtest(
     if not session:
         raise HTTPException(status_code=404, detail="Backtest not found")
     
+    # Cancel the task if running
     if session.task and not session.task.done():
         session.task.cancel()
         session.result.status = "cancelled"
         session.is_running = False
-        
-        # Mark weight tracking session as complete
-        if hasattr(session, 'weight_session_id'):
-            weight_tracker.complete_session(session.weight_session_id)
     
+    # Clean up the session
     backtest_manager.cleanup_session(backtest_id)
     
+    return {"message": f"Backtest {backtest_id} cancelled successfully"}
+
+
+@router.post("/cleanup")
+async def cleanup_hung_sessions(
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Clean up all hung/completed backtest sessions to fix loading issues.
+    
+    **Authentication Required**: This endpoint requires a valid API key.
+    """
+    try:
+        backtest_manager.cleanup_all_sessions()
+        return {"message": "All backtest sessions cleaned up successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to cleanup sessions: {str(e)}")
+
+
+@router.get("/sessions")
+async def list_active_sessions(
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    List all active backtest sessions for debugging.
+    
+    **Authentication Required**: This endpoint requires a valid API key.
+    """
+    sessions_info = []
+    for session_id, session in backtest_manager.sessions.items():
+        sessions_info.append({
+            "id": session_id,
+            "status": session.result.status,
+            "is_running": session.is_running,
+            "progress": session.result.progress,
+            "start_time": session.start_time.isoformat(),
+            "tickers": session.request.tickers,
+            "agents": session.request.selected_agents
+        })
+    
     return {
-        "backtest_id": backtest_id,
-        "status": "cancelled",
-        "message": "Backtest cancelled successfully"
+        "active_sessions": len(sessions_info),
+        "sessions": sessions_info
     } 

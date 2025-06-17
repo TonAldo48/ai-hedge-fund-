@@ -61,9 +61,31 @@ class BacktestManager:
         """Clean up a completed backtest session"""
         if backtest_id in self.sessions:
             session = self.sessions[backtest_id]
+            
+            # Cancel the task if it's still running
             if session.task and not session.task.done():
                 session.task.cancel()
+                
+            # Mark as not running
+            session.is_running = False
+            
+            # Clear the event queue to prevent memory leaks
+            while not session.event_queue.empty():
+                try:
+                    session.event_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                    
+            # Remove from sessions dict
             del self.sessions[backtest_id]
+            print(f"Cleaned up backtest session: {backtest_id}")
+    
+    def cleanup_all_sessions(self):
+        """Clean up all sessions - useful for server restart"""
+        session_ids = list(self.sessions.keys())
+        for session_id in session_ids:
+            self.cleanup_session(session_id)
+        print(f"Cleaned up {len(session_ids)} backtest sessions")
 
 
 # Global instance
