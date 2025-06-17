@@ -2,6 +2,8 @@ import datetime
 import os
 import pandas as pd
 import requests
+import time
+import random
 
 from src.data.cache import get_cache
 from src.data.models import (
@@ -38,6 +40,8 @@ def get_prices(ticker: str, start_date: str, end_date: str) -> list[Price]:
 
     url = f"https://api.financialdatasets.ai/prices/?ticker={ticker}&interval=day&interval_multiplier=1&start_date={start_date}&end_date={end_date}"
     response = requests.get(url, headers=headers)
+    if response.status_code == 404:
+        return []  # Return empty list if no data is found
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 

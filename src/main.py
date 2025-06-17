@@ -15,6 +15,7 @@ from src.utils.progress import progress
 from src.llm.models import LLM_ORDER, OLLAMA_LLM_ORDER, get_model_info, ModelProvider
 from src.utils.ollama import ensure_ollama_and_model
 from src.utils.tracing import setup_langsmith_tracing
+from langsmith import traceable
 
 import argparse
 from datetime import datetime
@@ -48,6 +49,10 @@ def parse_hedge_fund_response(response):
 
 
 ##### Run the Hedge Fund #####
+@traceable(
+    name="AI Hedge Fund Analysis",
+    metadata_key="hedge_fund_metadata"
+)
 def run_hedge_fund(
     tickers: list[str],
     start_date: str,
@@ -62,6 +67,19 @@ def run_hedge_fund(
     # Generate session ID if not provided
     if not session_id:
         session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]}"
+    
+    # Add metadata for tracing
+    from langsmith import get_current_run_tree
+    if get_current_run_tree():
+        get_current_run_tree().extra = {
+            "tickers": tickers,
+            "selected_analysts": selected_analysts,
+            "model_name": model_name,
+            "model_provider": model_provider,
+            "session_id": session_id,
+            "date_range": f"{start_date} to {end_date}",
+            "portfolio_cash": portfolio.get("cash", 0) if portfolio else 0
+        }
     
     # Start progress tracking
     progress.start()

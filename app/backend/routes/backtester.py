@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 import asyncio
 from datetime import datetime
 from typing import Optional
+from langsmith import traceable
 
 from app.backend.models.schemas import BacktestRequest, BacktestResult, ErrorResponse
 from app.backend.services.backtester import backtest_manager, run_backtest_async
@@ -169,6 +170,10 @@ async def get_backtest_status(
 
 
 @router.post("/run-sync")
+@traceable(
+    name="AI Hedge Fund Backtest Sync",
+    metadata_key="backtest_sync_metadata"
+)
 async def run_backtest_sync(
     request: BacktestRequest,
     api_key: str = Depends(verify_api_key)
@@ -194,6 +199,20 @@ async def run_backtest_sync(
         
         if not request.selected_agents:
             raise HTTPException(status_code=400, detail="At least one agent must be selected")
+        
+        # Add metadata for tracing
+        from langsmith import get_current_run_tree
+        if get_current_run_tree():
+            get_current_run_tree().extra = {
+                "tickers": request.tickers,
+                "selected_agents": request.selected_agents,
+                "model_name": request.model_name,
+                "model_provider": request.model_provider.value,
+                "date_range": f"{request.start_date} to {request.end_date}",
+                "initial_capital": request.initial_capital,
+                "margin_requirement": request.margin_requirement,
+                "backtest_type": "synchronous"
+            }
         
         # Generate weight tracking session ID
         weight_session_id = f"backtest_sync_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
