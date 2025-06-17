@@ -36,39 +36,7 @@ def ben_graham_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
-    
-    # Get or create session ID
-    session_id = state.get("session_id")
-    if not session_id:
-        # Generate a session ID if not provided
-        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        state["session_id"] = session_id
-        
-        # Create session in weight tracker
-        weight_tracker.create_session(
-            session_id=session_id,
-            session_type="hedge_fund",
-            tickers=tickers,
-            start_date=data.get("start_date", end_date),
-            end_date=end_date,
-            selected_agents=["ben_graham"]
-        )
 
-    
-    # Create session metadata for tracing
-    model_name = state["metadata"]["model_name"]
-    model_provider = state["metadata"]["model_provider"]
-    session_metadata = create_agent_session_metadata(
-        session_id=session_id,
-        agent_name="ben_graham",
-        tickers=tickers,
-        model_name=model_name,
-        model_provider=model_provider,
-        metadata={
-            "investment_style": "value_investing",
-            "key_metrics": ["PE_ratio", "PB_ratio", "current_ratio", "debt_ratio"]
-        }
-    )
     analysis_data = {}
     graham_analysis = {}
     

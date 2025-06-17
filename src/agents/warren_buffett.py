@@ -8,9 +8,6 @@ from langsmith import traceable
 from src.tools.api import get_financial_metrics, get_market_cap, search_line_items
 from src.utils.llm import call_llm
 from src.utils.progress import progress
-from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
-from src.utils.tracing import create_agent_session_metadata
-from datetime import datetime
 
 
 class WarrenBuffettSignal(BaseModel):
@@ -19,52 +16,11 @@ class WarrenBuffettSignal(BaseModel):
     reasoning: str
 
 
-@traceable(
-    name="warren_buffett_agent",
-    tags=["hedge_fund", "value_investing", "buffett", "fundamental_analysis"],
-    metadata={"agent_type": "fundamental_analyst", "investment_style": "value_investing"}
-)
 def warren_buffett_agent(state: AgentState):
     """Analyzes stocks using Buffett's principles and LLM reasoning."""
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
-    
-    # Create tracing metadata
-    model_name = state["metadata"]["model_name"]
-    model_provider = state["metadata"]["model_provider"]
-    
-    # Get or create session ID
-    session_id = state.get("session_id")
-    if not session_id:
-        # Generate a session ID if not provided
-        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        state["session_id"] = session_id
-        
-        # Create session in weight tracker
-        weight_tracker.create_session(
-            session_id=session_id,
-            session_type="hedge_fund",
-            tickers=tickers,
-            start_date=data.get("start_date", end_date),
-            end_date=end_date,
-            selected_agents=["warren_buffett"]
-        )
-    
-    # Create session metadata for tracing
-    session_metadata = create_agent_session_metadata(
-        session_id=session_id,
-        agent_name="warren_buffett",
-        tickers=tickers,
-        model_name=model_name,
-        model_provider=model_provider,
-        metadata={
-            "end_date": end_date,
-            "start_date": data.get("start_date", end_date),
-            "investment_philosophy": "value_investing",
-            "key_metrics": ["ROE", "debt_to_equity", "operating_margin", "intrinsic_value"]
-        }
-    )
 
     # Collect all analysis for LLM reasoning
     analysis_data = {}
