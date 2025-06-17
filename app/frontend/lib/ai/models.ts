@@ -9,12 +9,17 @@ export interface ChatModel {
 export const chatModels: Array<ChatModel> = [
   {
     id: 'chat-model',
-    name: 'Chat model',
-    description: 'Primary model for all-purpose chat',
+    name: 'GPT-4o',
+    description: 'OpenAI GPT-4o - Advanced model for all-purpose chat',
   },
   {
     id: 'chat-model-reasoning',
-    name: 'Reasoning model',
-    description: 'Uses advanced reasoning',
+    name: 'GPT-4o Reasoning',
+    description: 'OpenAI GPT-4o with advanced reasoning capabilities',
+  },
+  {
+    id: 'warren-buffett',
+    name: 'Warren Buffett',
+    description: 'AI agent specialized in value investing analysis using Warren Buffett\'s principles',
   },
 ];

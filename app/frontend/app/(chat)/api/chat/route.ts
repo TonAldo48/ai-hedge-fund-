@@ -75,6 +75,25 @@ export async function POST(request: Request) {
     const { id, message, selectedChatModel, selectedVisibilityType } =
       requestBody;
 
+    // Handle Warren Buffett model
+    if (selectedChatModel === 'warren-buffett') {
+      // Forward to Warren Buffett specific endpoint
+      const warrenBuffettUrl = new URL(request.url);
+      warrenBuffettUrl.pathname = '/api/warren-buffett';
+      
+      return fetch(warrenBuffettUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          message,
+          selectedVisibilityType,
+        }),
+      });
+    }
+
     const session = await auth();
 
     if (!session?.user) {

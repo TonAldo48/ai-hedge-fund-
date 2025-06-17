@@ -231,7 +231,7 @@ def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
 class FinancialAnalysisAgent:
     """LangChain agent for natural language financial analysis."""
     
-    def __init__(self, model_name: str = "gpt-4-turbo", model_provider: str = "openai"):
+    def __init__(self, model_name: str = "gpt-4o-mini", model_provider: str = "openai"):
         self.model_name = model_name
         self.model_provider = model_provider
         

@@ -39,7 +39,7 @@ Based on my codebase exploration, here's what we have:
 class BaseChatAgent:
     """Base class for all individual agent chat interfaces."""
     
-    def __init__(self, agent_name: str, model_name: str = "gpt-4-turbo"):
+    def __init__(self, agent_name: str, model_name: str = "gpt-4o-mini"):
         self.agent_name = agent_name
         self.model_name = model_name
         self.llm = get_model(model_name, "openai")
