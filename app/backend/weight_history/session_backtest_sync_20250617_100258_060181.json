@@ -1,0 +1,23 @@
+{
+  "session_id": "backtest_sync_20250617_100258_060181",
+  "session_type": "backtest_sync",
+  "tickers": [
+    "AAPL",
+    "MSFT"
+  ],
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "selected_agents": [
+    "aswath_damodaran",
+    "bill_ackman"
+  ],
+  "session_weights": {
+    "bill_ackman": {
+      "quality": 0.25,
+      "balance_sheet": 0.25,
+      "activism_potential": 0.25,
+      "valuation": 0.25
+    }
+  },
+  "created_at": "2025-06-17T10:02:58.063827"
+}

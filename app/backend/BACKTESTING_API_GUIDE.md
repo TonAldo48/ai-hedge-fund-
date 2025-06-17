@@ -230,7 +230,7 @@ Cancel a running backtest.
 ## 📊 Supported Models
 
 - **OpenAI**: `gpt-4o`, `gpt-4o-mini`
-- **Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`
+- **Anthropic**: `gpt-4o`, `claude-3-haiku-20240307`
 - **DeepSeek**: `deepseek-chat`, `deepseek-reasoner`
 
 ## 🌐 Frontend Integration

@@ -1,0 +1,24 @@
+{
+  "session_id": "api_sync_20250617_100147_692883",
+  "session_type": "hedge_fund",
+  "tickers": [
+    "AAPL",
+    "MSFT",
+    "GOOGL"
+  ],
+  "start_date": "2024-01-01",
+  "end_date": "2024-12-31",
+  "selected_agents": [
+    "aswath_damodaran",
+    "bill_ackman"
+  ],
+  "session_weights": {
+    "bill_ackman": {
+      "quality": 0.25,
+      "balance_sheet": 0.25,
+      "activism_potential": 0.25,
+      "valuation": 0.25
+    }
+  },
+  "created_at": "2025-06-17T10:01:47.697201"
+}

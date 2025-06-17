@@ -84,7 +84,7 @@ GET /hedge-fund/models
     },
     {
       "display_name": "Anthropic Claude 3.5 Sonnet",
-      "model_name": "claude-3-5-sonnet-20241022",
+      "model_name": "gpt-4o",
       "provider": "ANTHROPIC"
     }
     // ... more models
