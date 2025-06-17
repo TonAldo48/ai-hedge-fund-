@@ -13,17 +13,10 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarSeparator,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
   useSidebar,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
-import { MessageSquare, TrendingUp } from 'lucide-react';
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
@@ -42,7 +35,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               className="flex flex-row gap-3 items-center"
             >
               <span className="text-lg font-semibold px-2 hover:bg-muted rounded-md cursor-pointer">
-                AI Hedge Fund
+                Chatbot
               </span>
             </Link>
             <Tooltip>
@@ -64,38 +57,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             </Tooltip>
           </div>
         </SidebarMenu>
-        
-        <SidebarSeparator />
-        
-        <SidebarGroup>
-          <SidebarGroupLabel>Chat Agents</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link
-                    href="/"
-                    onClick={() => setOpenMobile(false)}
-                  >
-                    <MessageSquare className="size-4" />
-                    <span>General Chat</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link
-                    href="/warren-buffett"
-                    onClick={() => setOpenMobile(false)}
-                  >
-                    <TrendingUp className="size-4" />
-                    <span>Warren Buffett</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarHeader>
       <SidebarContent>
         <SidebarHistory user={user} />

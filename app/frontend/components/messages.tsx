@@ -17,7 +17,6 @@ interface MessagesProps {
   reload: UseChatHelpers['reload'];
   isReadonly: boolean;
   isArtifactVisible: boolean;
-  customGreeting?: React.ReactNode;
 }
 
 function PureMessages({
@@ -28,7 +27,6 @@ function PureMessages({
   setMessages,
   reload,
   isReadonly,
-  customGreeting,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -46,7 +44,7 @@ function PureMessages({
       ref={messagesContainerRef}
       className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4 relative"
     >
-      {messages.length === 0 && (customGreeting || <Greeting />)}
+      {messages.length === 0 && <Greeting />}
 
       {messages.map((message, index) => (
         <PreviewMessage

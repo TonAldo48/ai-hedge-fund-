@@ -59,58 +59,24 @@ async def analyze_warren_buffett_streaming(
     try:
         from app.backend.services.warren_buffett_chat_agent import get_warren_buffett_agent
         
-        async def event_stream():
-            """Generate Server-Sent Events for streaming analysis."""
+        async def ask_agent():
             agent = get_warren_buffett_agent()
             
-            # Convert chat history to simple list if needed
             chat_history = []
             for msg in request.chat_history:
                 chat_history.append({
                     "role": msg.role,
-                    "content": msg.content,
-                    "timestamp": msg.timestamp
+                    "content": msg.content
                 })
-            
-            try:
-                async for event_json in agent.analyze_streaming(request.query, chat_history):
-                    # Format as Server-Sent Event
-                    yield f"data: {event_json}\n\n"
-                    
-                    # Small delay to prevent overwhelming the client
-                    await asyncio.sleep(0.1)
-                    
-            except Exception as e:
-                # Send error event
-                error_event = {
-                    "type": "error",
-                    "data": {
-                        "error": str(e),
-                        "message": "Analysis failed",
-                        "success": False
-                    },
-                    "timestamp": "2024-01-01T00:00:00Z"  # Will be replaced with actual time
-                }
-                yield f"data: {json.dumps(error_event)}\n\n"
-            
-            # Send final stream end event
-            end_event = {
-                "type": "stream_end",
-                "data": {"message": "Stream completed"},
-                "timestamp": "2024-01-01T00:00:00Z"
-            }
-            yield f"data: {json.dumps(end_event)}\n\n"
-        
-        return StreamingResponse(
-            event_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*"
-            }
-        )
+
+            # Get the generator from the agent
+            response_generator = agent.analyze_streaming_v2(request.query, chat_history)
+
+            # Stream the response
+            async for chunk in response_generator:
+                yield chunk
+
+        return StreamingResponse(ask_agent(), media_type="text/event-stream")
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start streaming analysis: {str(e)}")

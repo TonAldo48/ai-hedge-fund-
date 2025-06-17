@@ -51,32 +51,27 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
     }));
   }
 
-  const cookieStore = await cookies();
-  const chatModelFromCookie = cookieStore.get('chat-model');
+  // Determine the correct model based on agentType from database
+  const getChatModel = () => {
+    // If this is a Warren Buffett chat, always use warren-buffett model
+    if (chat.agentType === 'warren-buffett') {
+      return 'warren-buffett';
+    }
+    
+    // For regular chats, check cookie preference
+    const cookieStore = cookies();
+    const chatModelFromCookie = cookieStore.get('chat-model');
+    return chatModelFromCookie?.value || DEFAULT_CHAT_MODEL;
+  };
 
-  if (!chatModelFromCookie) {
-    return (
-      <>
-        <Chat
-          id={chat.id}
-          initialMessages={convertToUIMessages(messagesFromDb)}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialVisibilityType={chat.visibility}
-          isReadonly={session?.user?.id !== chat.userId}
-          session={session}
-          autoResume={true}
-        />
-        <DataStreamHandler id={id} />
-      </>
-    );
-  }
+  const chatModel = getChatModel();
 
   return (
     <>
       <Chat
         id={chat.id}
         initialMessages={convertToUIMessages(messagesFromDb)}
-        initialChatModel={chatModelFromCookie.value}
+        initialChatModel={chatModel}
         initialVisibilityType={chat.visibility}
         isReadonly={session?.user?.id !== chat.userId}
         session={session}

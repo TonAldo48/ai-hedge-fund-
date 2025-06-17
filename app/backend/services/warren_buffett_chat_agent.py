@@ -699,6 +699,36 @@ Thought: {agent_scratchpad}"""
             }
             yield json.dumps(error_event)
 
+    async def analyze_streaming_v2(self, query: str, chat_history: List = None) -> AsyncGenerator[str, None]:
+        """
+        Stream the final response from the Warren Buffett agent token by token.
+        This is compatible with the Vercel AI SDK's useChat hook.
+        """
+        # Get the full response from the existing `analyze` method
+        # We can reuse the logic without duplicating it
+        result = await self.analyze(query, chat_history)
+        
+        # Simulate a streaming effect for the final response text
+        # In a real scenario, you would use the streaming capabilities of the LLM
+        response_text = result.get("response", "No response generated.")
+        
+        # Get the underlying LLM with streaming enabled
+        streaming_llm = get_model(
+            self.model_name,
+            self.model_provider,
+            streaming=True
+        )
+
+        # Create a simple prompt to generate the final response in a streaming way
+        messages = [
+            SystemMessage(content="You are a helpful assistant."),
+            HumanMessage(content=f"Based on the following analysis, provide a comprehensive answer as Warren Buffett:\n\n{response_text}")
+        ]
+
+        # Stream the response from the LLM
+        async for chunk in streaming_llm.astream(messages):
+            yield chunk.content
+
 # Global agent instance with lazy initialization
 _warren_buffett_agent = None
 

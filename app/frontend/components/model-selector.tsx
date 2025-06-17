@@ -40,8 +40,6 @@ export function ModelSelector({
     () =>
       availableChatModels.find(
         (chatModel) => chatModel.id === optimisticModelId,
-      ) || chatModels.find(
-        (chatModel) => chatModel.id === optimisticModelId,
       ),
     [optimisticModelId, availableChatModels],
   );

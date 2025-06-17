@@ -55,18 +55,12 @@ function PureChatHeader({
         </Tooltip>
       )}
 
-      {!isReadonly && selectedModelId !== 'warren-buffett' && (
+      {!isReadonly && (
         <ModelSelector
           session={session}
           selectedModelId={selectedModelId}
           className="order-1 md:order-2"
         />
-      )}
-
-      {selectedModelId === 'warren-buffett' && (
-        <div className="order-1 md:order-2 px-3 py-1.5 text-sm font-medium">
-          Warren Buffett Agent
-        </div>
       )}
 
       {!isReadonly && (

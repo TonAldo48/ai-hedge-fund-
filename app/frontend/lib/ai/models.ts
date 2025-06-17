@@ -17,9 +17,4 @@ export const chatModels: Array<ChatModel> = [
     name: 'GPT-4o Reasoning',
     description: 'OpenAI GPT-4o with advanced reasoning capabilities',
   },
-  {
-    id: 'warren-buffett',
-    name: 'Warren Buffett',
-    description: 'AI agent specialized in value investing analysis using Warren Buffett\'s principles',
-  },
 ];
