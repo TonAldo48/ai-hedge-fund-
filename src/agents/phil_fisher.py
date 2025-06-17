@@ -16,6 +16,8 @@ from src.utils.llm import call_llm
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 from datetime import datetime
 import statistics
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class PhilFisherSignal(BaseModel):
@@ -24,6 +26,11 @@ class PhilFisherSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="phil_fisher_agent",
+    tags=["hedge_fund", "growth_investing", "phil_fisher", "quality_growth"],
+    metadata={"agent_type": "investment_analyst", "style": "quality_growth_investing"}
+)
 def phil_fisher_agent(state: AgentState):
     """
     Analyzes stocks using Phil Fisher's investing principles:
@@ -56,6 +63,21 @@ def phil_fisher_agent(state: AgentState):
             end_date=end_date,
             selected_agents=["phil_fisher"]
         )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="phil_fisher",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "quality_growth_investing",
+            "key_metrics": ["growth_quality", "margins_stability", "management_efficiency", "valuation", "insider_activity", "sentiment"]
+        }
+    )
 
     analysis_data = {}
     fisher_analysis = {}
@@ -218,6 +240,11 @@ def phil_fisher_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_fisher_growth_quality",
+    tags=["phil_fisher", "growth_analysis", "quality_analysis"],
+    metadata={"analysis_type": "growth_quality"}
+)
 def analyze_fisher_growth_quality(financial_line_items: list) -> dict:
     """
     Evaluate growth & quality:
@@ -309,6 +336,11 @@ def analyze_fisher_growth_quality(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_margins_stability",
+    tags=["phil_fisher", "margin_analysis", "stability_analysis"],
+    metadata={"analysis_type": "margins_stability"}
+)
 def analyze_margins_stability(financial_line_items: list) -> dict:
     """
     Looks at margin consistency (gross/operating margin) and general stability over time.
@@ -375,6 +407,11 @@ def analyze_margins_stability(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_management_efficiency_leverage",
+    tags=["phil_fisher", "management_analysis", "efficiency_analysis"],
+    metadata={"analysis_type": "management_efficiency"}
+)
 def analyze_management_efficiency_leverage(financial_line_items: list) -> dict:
     """
     Evaluate management efficiency & leverage:
@@ -451,6 +488,11 @@ def analyze_management_efficiency_leverage(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_fisher_valuation",
+    tags=["phil_fisher", "valuation_analysis", "growth_valuation"],
+    metadata={"analysis_type": "fisher_valuation"}
+)
 def analyze_fisher_valuation(financial_line_items: list, market_cap: float | None) -> dict:
     """
     Phil Fisher is willing to pay for quality and growth, but still checks:
@@ -508,6 +550,11 @@ def analyze_fisher_valuation(financial_line_items: list, market_cap: float | Non
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["phil_fisher", "insider_analysis"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def analyze_insider_activity(insider_trades: list) -> dict:
     """
     Simple insider-trade analysis:
@@ -550,6 +597,11 @@ def analyze_insider_activity(insider_trades: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_sentiment",
+    tags=["phil_fisher", "sentiment_analysis"],
+    metadata={"analysis_type": "sentiment"}
+)
 def analyze_sentiment(news_items: list) -> dict:
     """
     Basic news sentiment: negative keyword check vs. overall volume.
@@ -578,6 +630,11 @@ def analyze_sentiment(news_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="generate_fisher_output",
+    tags=["phil_fisher", "output_generation", "llm"],
+    metadata={"output_type": "investment_signal"}
+)
 def generate_fisher_output(
     ticker: str,
     analysis_data: dict[str, any],

@@ -10,6 +10,8 @@ from src.utils.progress import progress
 from src.utils.llm import call_llm
 from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class BillAckmanSignal(BaseModel):
@@ -18,6 +20,11 @@ class BillAckmanSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="bill_ackman_agent",
+    tags=["hedge_fund", "activist_investing", "bill_ackman", "value_investing"],
+    metadata={"agent_type": "investment_analyst", "style": "activist_value_investing"}
+)
 def bill_ackman_agent(state: AgentState):
     """
     Analyzes stocks using Bill Ackman's investing principles and LLM reasoning.
@@ -44,6 +51,21 @@ def bill_ackman_agent(state: AgentState):
             end_date=end_date,
             selected_agents=["bill_ackman"]
         )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="bill_ackman",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "activist_value_investing",
+            "key_metrics": ["quality", "balance_sheet", "activism_potential", "valuation"]
+        }
+    )
     
     analysis_data = {}
     ackman_analysis = {}
@@ -203,6 +225,11 @@ def bill_ackman_agent(state: AgentState):
     }
 
 
+@traceable(
+    name="analyze_business_quality",
+    tags=["bill_ackman", "quality_analysis", "competitive_moats"],
+    metadata={"analysis_type": "business_quality"}
+)
 def analyze_business_quality(metrics: list, financial_line_items: list) -> dict:
     """
     Analyze whether the company has a high-quality business with stable or growing cash flows,
@@ -281,6 +308,11 @@ def analyze_business_quality(metrics: list, financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="analyze_financial_discipline",
+    tags=["bill_ackman", "financial_discipline", "capital_allocation"],
+    metadata={"analysis_type": "financial_discipline"}
+)
 def analyze_financial_discipline(metrics: list, financial_line_items: list) -> dict:
     """
     Evaluate the company's balance sheet over multiple periods:
@@ -356,6 +388,11 @@ def analyze_financial_discipline(metrics: list, financial_line_items: list) -> d
     }
 
 
+@traceable(
+    name="analyze_activism_potential",
+    tags=["bill_ackman", "activism_analysis", "value_creation"],
+    metadata={"analysis_type": "activism_potential"}
+)
 def analyze_activism_potential(financial_line_items: list) -> dict:
     """
     Bill Ackman often engages in activism if a company has a decent brand or moat
@@ -401,6 +438,11 @@ def analyze_activism_potential(financial_line_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_valuation",
+    tags=["bill_ackman", "valuation_analysis", "margin_of_safety"],
+    metadata={"analysis_type": "valuation"}
+)
 def analyze_valuation(financial_line_items: list, market_cap: float) -> dict:
     """
     Ackman invests in companies trading at a discount to intrinsic value.
@@ -465,6 +507,11 @@ def analyze_valuation(financial_line_items: list, market_cap: float) -> dict:
     }
 
 
+@traceable(
+    name="generate_ackman_output",
+    tags=["bill_ackman", "llm_generation", "activist_investing"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_ackman_output(
     ticker: str,
     analysis_data: dict[str, any],

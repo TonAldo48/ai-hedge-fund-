@@ -405,6 +405,11 @@ def analyze_insider_activity(insider_trades: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_sentiment",
+    tags=["stanley_druckenmiller", "sentiment_analysis", "news_analysis"],
+    metadata={"analysis_type": "sentiment"}
+)
 def analyze_sentiment(news_items: list) -> dict:
     """
     Basic news sentiment: negative keyword check vs. overall volume.
@@ -436,6 +441,11 @@ def analyze_sentiment(news_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_risk_reward",
+    tags=["stanley_druckenmiller", "risk_analysis", "asymmetric_risk_reward"],
+    metadata={"analysis_type": "risk_reward"}
+)
 def analyze_risk_reward(financial_line_items: list, prices: list) -> dict:
     """
     Assesses risk via:
@@ -510,6 +520,11 @@ def analyze_risk_reward(financial_line_items: list, prices: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_druckenmiller_valuation",
+    tags=["stanley_druckenmiller", "valuation_analysis", "growth_valuation"],
+    metadata={"analysis_type": "druckenmiller_valuation"}
+)
 def analyze_druckenmiller_valuation(financial_line_items: list, market_cap: float | None) -> dict:
     """
     Druckenmiller is willing to pay up for growth, but still checks:
@@ -614,6 +629,11 @@ def analyze_druckenmiller_valuation(financial_line_items: list, market_cap: floa
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="generate_druckenmiller_output",
+    tags=["stanley_druckenmiller", "llm_generation", "macro_momentum"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_druckenmiller_output(
     ticker: str,
     analysis_data: dict[str, any],
