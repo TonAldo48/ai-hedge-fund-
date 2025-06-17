@@ -39,9 +39,18 @@ def get_prices(ticker: str, start_date: str, end_date: str) -> list[Price]:
         headers["X-API-KEY"] = api_key
 
     url = f"https://api.financialdatasets.ai/prices/?ticker={ticker}&interval=day&interval_multiplier=1&start_date={start_date}&end_date={end_date}"
+    
+    # Add a small random delay to prevent rate limiting
+    time.sleep(random.uniform(0.5, 1.5))
+    
     response = requests.get(url, headers=headers)
     if response.status_code == 404:
         return []  # Return empty list if no data is found
+    if response.status_code == 429:
+        # Rate limited - wait and retry once
+        print(f"Rate limited fetching {ticker}, waiting 5 seconds...")
+        time.sleep(5)
+        response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
@@ -78,7 +87,16 @@ def get_financial_metrics(
         headers["X-API-KEY"] = api_key
 
     url = f"https://api.financialdatasets.ai/financial-metrics/?ticker={ticker}&report_period_lte={end_date}&limit={limit}&period={period}"
+    
+    # Add a small random delay to prevent rate limiting
+    time.sleep(random.uniform(0.5, 1.5))
+    
     response = requests.get(url, headers=headers)
+    if response.status_code == 429:
+        # Rate limited - wait and retry once
+        print(f"Rate limited fetching financial metrics for {ticker}, waiting 5 seconds...")
+        time.sleep(5)
+        response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
