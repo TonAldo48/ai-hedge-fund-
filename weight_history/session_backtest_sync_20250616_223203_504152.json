@@ -1,0 +1,21 @@
+{
+  "session_id": "backtest_sync_20250616_223203_504152",
+  "session_type": "backtest_sync",
+  "tickers": [
+    "AAPL"
+  ],
+  "start_date": "2024-12-01",
+  "end_date": "2024-12-03",
+  "selected_agents": [
+    "warren_buffett"
+  ],
+  "session_weights": {
+    "warren_buffett": {
+      "business_quality": 0.3,
+      "management": 0.25,
+      "financial_strength": 0.25,
+      "valuation": 0.2
+    }
+  },
+  "created_at": "2025-06-16T22:32:03.505201"
+}

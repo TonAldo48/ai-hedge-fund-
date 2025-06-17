@@ -40,17 +40,25 @@ def get_prices(ticker: str, start_date: str, end_date: str) -> list[Price]:
 
     url = f"https://api.financialdatasets.ai/prices/?ticker={ticker}&interval=day&interval_multiplier=1&start_date={start_date}&end_date={end_date}"
     
-    # Add a small random delay to prevent rate limiting
-    time.sleep(random.uniform(0.5, 1.5))
+    # Add delay to prevent rate limiting (2-4 seconds)
+    time.sleep(random.uniform(2.0, 4.0))
     
     response = requests.get(url, headers=headers)
     if response.status_code == 404:
         return []  # Return empty list if no data is found
     if response.status_code == 429:
-        # Rate limited - wait and retry once
-        print(f"Rate limited fetching {ticker}, waiting 5 seconds...")
-        time.sleep(5)
+        # Rate limited - wait longer and retry with exponential backoff
+        wait_time = 15 + random.uniform(0, 10)  # 15-25 seconds
+        print(f"Rate limited fetching {ticker}, waiting {wait_time:.1f} seconds...")
+        time.sleep(wait_time)
         response = requests.get(url, headers=headers)
+        
+        # If still rate limited, wait even longer
+        if response.status_code == 429:
+            wait_time = 30 + random.uniform(0, 15)  # 30-45 seconds
+            print(f"Still rate limited fetching {ticker}, waiting {wait_time:.1f} seconds...")
+            time.sleep(wait_time)
+            response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
@@ -88,15 +96,23 @@ def get_financial_metrics(
 
     url = f"https://api.financialdatasets.ai/financial-metrics/?ticker={ticker}&report_period_lte={end_date}&limit={limit}&period={period}"
     
-    # Add a small random delay to prevent rate limiting
-    time.sleep(random.uniform(0.5, 1.5))
+    # Add delay to prevent rate limiting (2-4 seconds)
+    time.sleep(random.uniform(2.0, 4.0))
     
     response = requests.get(url, headers=headers)
     if response.status_code == 429:
-        # Rate limited - wait and retry once
-        print(f"Rate limited fetching financial metrics for {ticker}, waiting 5 seconds...")
-        time.sleep(5)
+        # Rate limited - wait longer and retry with exponential backoff
+        wait_time = 15 + random.uniform(0, 10)  # 15-25 seconds
+        print(f"Rate limited fetching financial metrics for {ticker}, waiting {wait_time:.1f} seconds...")
+        time.sleep(wait_time)
         response = requests.get(url, headers=headers)
+        
+        # If still rate limited, wait even longer
+        if response.status_code == 429:
+            wait_time = 30 + random.uniform(0, 15)  # 30-45 seconds
+            print(f"Still rate limited fetching financial metrics for {ticker}, waiting {wait_time:.1f} seconds...")
+            time.sleep(wait_time)
+            response = requests.get(url, headers=headers)
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
@@ -135,7 +151,17 @@ def search_line_items(
         "period": period,
         "limit": limit,
     }
+    
+    # Add delay to prevent rate limiting
+    time.sleep(random.uniform(2.0, 4.0))
+    
     response = requests.post(url, headers=headers, json=body)
+    if response.status_code == 429:
+        # Rate limited - wait and retry
+        wait_time = 15 + random.uniform(0, 10)
+        print(f"Rate limited fetching line items for {ticker}, waiting {wait_time:.1f} seconds...")
+        time.sleep(wait_time)
+        response = requests.post(url, headers=headers, json=body)
     if response.status_code != 200:
         raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
     data = response.json()
@@ -177,7 +203,16 @@ def get_insider_trades(
             url += f"&filing_date_gte={start_date}"
         url += f"&limit={limit}"
 
+        # Add delay to prevent rate limiting
+        time.sleep(random.uniform(2.0, 4.0))
+        
         response = requests.get(url, headers=headers)
+        if response.status_code == 429:
+            # Rate limited - wait and retry
+            wait_time = 15 + random.uniform(0, 10)
+            print(f"Rate limited fetching insider trades for {ticker}, waiting {wait_time:.1f} seconds...")
+            time.sleep(wait_time)
+            response = requests.get(url, headers=headers)
         if response.status_code != 200:
             raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
@@ -238,7 +273,16 @@ def get_company_news(
             url += f"&start_date={start_date}"
         url += f"&limit={limit}"
 
+        # Add delay to prevent rate limiting
+        time.sleep(random.uniform(2.0, 4.0))
+        
         response = requests.get(url, headers=headers)
+        if response.status_code == 429:
+            # Rate limited - wait and retry
+            wait_time = 15 + random.uniform(0, 10)
+            print(f"Rate limited fetching company news for {ticker}, waiting {wait_time:.1f} seconds...")
+            time.sleep(wait_time)
+            response = requests.get(url, headers=headers)
         if response.status_code != 200:
             raise Exception(f"Error fetching data: {ticker} - {response.status_code} - {response.text}")
 
@@ -283,7 +327,17 @@ def get_market_cap(
             headers["X-API-KEY"] = api_key
 
         url = f"https://api.financialdatasets.ai/company/facts/?ticker={ticker}"
+        
+        # Add delay to prevent rate limiting
+        time.sleep(random.uniform(2.0, 4.0))
+        
         response = requests.get(url, headers=headers)
+        if response.status_code == 429:
+            # Rate limited - wait and retry
+            wait_time = 15 + random.uniform(0, 10)
+            print(f"Rate limited fetching company facts for {ticker}, waiting {wait_time:.1f} seconds...")
+            time.sleep(wait_time)
+            response = requests.get(url, headers=headers)
         if response.status_code != 200:
             print(f"Error fetching company facts: {ticker} - {response.status_code}")
             return None
