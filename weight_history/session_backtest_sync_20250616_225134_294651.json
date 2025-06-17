@@ -1,0 +1,37 @@
+{
+  "session_id": "backtest_sync_20250616_225134_294651",
+  "session_type": "backtest_sync",
+  "tickers": [
+    "NVDA"
+  ],
+  "start_date": "2024-03-01",
+  "end_date": "2024-06-01",
+  "selected_agents": [
+    "warren_buffett",
+    "peter_lynch",
+    "technical_analyst"
+  ],
+  "session_weights": {
+    "warren_buffett": {
+      "business_quality": 0.3,
+      "management": 0.25,
+      "financial_strength": 0.25,
+      "valuation": 0.2
+    },
+    "peter_lynch": {
+      "growth": 0.3,
+      "valuation": 0.25,
+      "fundamentals": 0.2,
+      "sentiment": 0.15,
+      "insider_activity": 0.1
+    },
+    "technical_analyst": {
+      "trend": 0.25,
+      "mean_reversion": 0.2,
+      "momentum": 0.25,
+      "volatility": 0.15,
+      "stat_arb": 0.15
+    }
+  },
+  "created_at": "2025-06-16T22:51:34.299254"
+}
