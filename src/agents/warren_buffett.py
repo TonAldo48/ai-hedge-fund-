@@ -110,11 +110,26 @@ def warren_buffett_agent(state: AgentState):
         progress.update_status("warren_buffett_agent", ticker, "Calculating intrinsic value")
         intrinsic_value_analysis = calculate_intrinsic_value(financial_line_items)
 
-        # Calculate total score
-        total_score = fundamental_analysis["score"] + consistency_analysis["score"] + moat_analysis["score"] + mgmt_analysis["score"]
-        max_possible_score = 10 + moat_analysis["max_score"] + mgmt_analysis["max_score"]
-        # fundamental_analysis + consistency combined were up to 10 points total
-        # moat can add up to 3, mgmt can add up to 2, for example
+        # Normalize scores and apply weights from registry
+        # fundamental_analysis: max 7 points (ROE:2, Debt:2, OpMargin:2, CurrentRatio:1)
+        # consistency_analysis: max 3 points  
+        # moat_analysis: max 3 points
+        # mgmt_analysis: max 2 points
+        
+        fundamental_score = fundamental_analysis["score"] / 7 * 10  # Normalize to 0-10
+        consistency_score = consistency_analysis["score"] / 3 * 10  # Normalize to 0-10
+        moat_score = moat_analysis["score"] / 3 * 10  # Normalize to 0-10
+        mgmt_score = mgmt_analysis["score"] / 2 * 10  # Normalize to 0-10
+        
+        # Apply weights from weight manager
+        total_score = (
+            fundamental_score * current_weights["quality_business"] +
+            consistency_score * current_weights["earnings_growth"] +
+            moat_score * current_weights["economic_moat"] +
+            mgmt_score * current_weights["management_quality"]
+        )
+        
+        max_possible_score = 10
 
         # Add margin of safety analysis if we have both intrinsic value and current price
         margin_of_safety = None
@@ -122,14 +137,10 @@ def warren_buffett_agent(state: AgentState):
         if intrinsic_value and market_cap:
             margin_of_safety = (intrinsic_value - market_cap) / market_cap
 
-        # Generate trading signal using a stricter margin-of-safety requirement
-        # if fundamentals+moat+management are strong but margin_of_safety < 0.3, it's neutral
-        # if fundamentals are very weak or margin_of_safety is severely negative -> bearish
-        # else bullish
-        if (total_score >= 0.7 * max_possible_score) and margin_of_safety and (margin_of_safety >= 0.3):
+        # Generate trading signal based on weighted score and margin of safety
+        if total_score >= 7.0 and margin_of_safety and margin_of_safety >= 0.3:
             signal = "bullish"
-        elif total_score <= 0.3 * max_possible_score or (margin_of_safety is not None and margin_of_safety < -0.3):
-            # negative margin of safety beyond -30% could be overpriced -> bearish
+        elif total_score <= 4.0 or (margin_of_safety is not None and margin_of_safety < -0.3):
             signal = "bearish"
         else:
             signal = "neutral"
@@ -146,6 +157,7 @@ def warren_buffett_agent(state: AgentState):
             "intrinsic_value_analysis": intrinsic_value_analysis,
             "market_cap": market_cap,
             "margin_of_safety": margin_of_safety,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("warren_buffett_agent", ticker, "Generating Warren Buffett analysis")
@@ -162,6 +174,62 @@ def warren_buffett_agent(state: AgentState):
             "confidence": buffett_output.confidence,  # Normalize between 0 to 100
             "reasoning": buffett_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="warren_buffett",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=buffett_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="warren_buffett",
+            ticker=ticker,
+            function_name="analyze_fundamentals",
+            score=fundamental_analysis["score"],
+            max_score=7,
+            details=fundamental_analysis["details"],
+            function_data=fundamental_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="warren_buffett",
+            ticker=ticker,
+            function_name="analyze_consistency",
+            score=consistency_analysis["score"],
+            max_score=3,
+            details=consistency_analysis["details"],
+            function_data=consistency_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="warren_buffett",
+            ticker=ticker,
+            function_name="analyze_moat",
+            score=moat_analysis["score"],
+            max_score=3,
+            details=moat_analysis["details"],
+            function_data=moat_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="warren_buffett",
+            ticker=ticker,
+            function_name="analyze_management_quality",
+            score=mgmt_analysis["score"],
+            max_score=2,
+            details=mgmt_analysis["details"],
+            function_data=mgmt_analysis
+        )
 
         progress.update_status("warren_buffett_agent", ticker, "Done", analysis=buffett_output.reasoning)
 
@@ -180,6 +248,11 @@ def warren_buffett_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_fundamentals",
+    tags=["warren_buffett", "fundamentals", "value_investing"],
+    metadata={"analysis_type": "fundamentals"}
+)
 def analyze_fundamentals(metrics: list) -> dict[str, any]:
     """Analyze company fundamentals based on Buffett's criteria."""
     if not metrics:
@@ -229,6 +302,11 @@ def analyze_fundamentals(metrics: list) -> dict[str, any]:
     return {"score": score, "details": "; ".join(reasoning), "metrics": latest_metrics.model_dump()}
 
 
+@traceable(
+    name="analyze_consistency",
+    tags=["warren_buffett", "consistency", "value_investing"],
+    metadata={"analysis_type": "earnings_consistency"}
+)
 def analyze_consistency(financial_line_items: list) -> dict[str, any]:
     """Analyze earnings consistency and growth."""
     if len(financial_line_items) < 4:  # Need at least 4 periods for trend analysis
@@ -262,6 +340,11 @@ def analyze_consistency(financial_line_items: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="analyze_moat",
+    tags=["warren_buffett", "economic_moat", "value_investing"],
+    metadata={"analysis_type": "economic_moat"}
+)
 def analyze_moat(metrics: list) -> dict[str, any]:
     """
     Evaluate whether the company likely has a durable competitive advantage (moat).
@@ -312,6 +395,11 @@ def analyze_moat(metrics: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="analyze_management_quality",
+    tags=["warren_buffett", "management_quality", "value_investing"],
+    metadata={"analysis_type": "management_quality"}
+)
 def analyze_management_quality(financial_line_items: list) -> dict[str, any]:
     """
     Checks for share dilution or consistent buybacks, and some dividend track record.
@@ -352,6 +440,11 @@ def analyze_management_quality(financial_line_items: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="calculate_owner_earnings",
+    tags=["warren_buffett", "owner_earnings", "value_investing"],
+    metadata={"analysis_type": "owner_earnings"}
+)
 def calculate_owner_earnings(financial_line_items: list) -> dict[str, any]:
     """Calculate owner earnings (Buffett's preferred measure of true earnings power).
     Owner Earnings = Net Income + Depreciation - Maintenance CapEx"""
@@ -378,6 +471,11 @@ def calculate_owner_earnings(financial_line_items: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="calculate_intrinsic_value",
+    tags=["warren_buffett", "intrinsic_value", "dcf", "value_investing"],
+    metadata={"analysis_type": "intrinsic_value"}
+)
 def calculate_intrinsic_value(financial_line_items: list) -> dict[str, any]:
     """Calculate intrinsic value using DCF with owner earnings."""
     if not financial_line_items:
@@ -428,6 +526,11 @@ def calculate_intrinsic_value(financial_line_items: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="generate_buffett_output",
+    tags=["warren_buffett", "llm_generation", "value_investing"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_buffett_output(
     ticker: str,
     analysis_data: dict[str, any],
