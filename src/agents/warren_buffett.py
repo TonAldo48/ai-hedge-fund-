@@ -17,6 +17,11 @@ class WarrenBuffettSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="warren_buffett_agent",
+    tags=["hedge_fund", "value_investing", "warren_buffett", "fundamental_analysis"],
+    metadata={"agent_type": "investment_analyst", "style": "value_investing"}
+)
 def warren_buffett_agent(state: AgentState):
     """Analyzes stocks using Buffett's principles and LLM reasoning."""
     data = state["data"]

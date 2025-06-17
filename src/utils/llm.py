@@ -53,7 +53,14 @@ def call_llm(
     }
 
     model_info = get_model_info(model_name, model_provider)
+    
+    # Handle the None case for llm
     llm = get_model(model_name, model_provider)
+    if llm is None:
+        print(f"❌ Failed to initialize model: {model_name} with provider: {model_provider}")
+        if default_factory:
+            return default_factory()
+        return create_default_response(pydantic_model)
 
     # For non-JSON support models, we can use structured output
     if not (model_info and not model_info.has_json_mode()):

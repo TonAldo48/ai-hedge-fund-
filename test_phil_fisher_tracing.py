@@ -15,6 +15,10 @@ import os
 import sys
 from datetime import datetime, timedelta
 import json
+from dotenv import load_dotenv
+
+# Load environment variables first
+load_dotenv()
 
 # Add src to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
