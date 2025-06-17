@@ -38,17 +38,17 @@ def setup_langsmith():
 def create_test_state():
     """
     Create test state for Phil Fisher analysis
-    Using AMZN as it represents Fisher's ideal:
+    Using NVDA as it represents Fisher's ideal:
     - Long-term growth story with R&D investment
     - Strong margins and market leadership
     - Management that thinks long-term
-    - Willing to sacrifice short-term profits for growth
+    - Innovation-focused with sustainable advantages
     """
     end_date = datetime.now() - timedelta(days=30)
     
     return {
         "data": {
-            "tickers": ["AMZN"],  # Amazon - classic Fisher-style growth company
+            "tickers": ["NVDA"],  # NVIDIA - classic Fisher-style growth company
             "end_date": end_date.strftime("%Y-%m-%d"),
             "start_date": (end_date - timedelta(days=365)).strftime("%Y-%m-%d"),
             "analyst_signals": {}

@@ -8,6 +8,7 @@ from langsmith import traceable
 from src.tools.api import get_financial_metrics, get_market_cap, search_line_items
 from src.utils.llm import call_llm
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
 
 
 class WarrenBuffettSignal(BaseModel):
@@ -21,6 +22,7 @@ def warren_buffett_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    session_id = state.get("session_id", "default_session")
 
     # Collect all analysis for LLM reasoning
     analysis_data = {}
