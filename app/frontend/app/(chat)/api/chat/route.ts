@@ -123,6 +123,7 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title,
         visibility: selectedVisibilityType,
+        agentType: 'general',
       });
     } else {
       if (chat.userId !== session.user.id) {

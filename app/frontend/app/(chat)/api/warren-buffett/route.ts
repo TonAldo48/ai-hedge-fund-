@@ -7,7 +7,7 @@ import {
   getChatById,
   saveChat,
   saveMessages,
-  getMessagesByChatId,
+  getMessagesByChatIdAndAgentType,
   createStreamId,
 } from '@/lib/db/queries';
 import { generateTitleFromUserMessage } from '../../actions';
@@ -21,7 +21,7 @@ interface WarrenBuffettRequest {
     id: string;
     role: 'user';
     content: string;
-    parts?: Array<{type: string; text: string}>;
+    parts: Array<{type: 'text'; text: string}>;
     createdAt: Date;
   };
   selectedVisibilityType: 'private' | 'public';
@@ -51,15 +51,32 @@ export async function POST(request: Request) {
         userId: session.user.id,
         title,
         visibility: selectedVisibilityType,
+        agentType: 'warren-buffett',
       });
     } else {
       if (chat.userId !== session.user.id) {
         return new ChatSDKError('forbidden:chat').toResponse();
       }
+      
+      // Ensure this is a Warren Buffett chat
+      if (chat.agentType !== 'warren-buffett') {
+        return new ChatSDKError('bad_request:chat', 'Chat is not a Warren Buffett conversation').toResponse();
+      }
     }
 
-    // Get previous messages
-    const previousMessages = await getMessagesByChatId({ id });
+    // Get previous Warren Buffett messages only
+    const previousMessages = await getMessagesByChatIdAndAgentType({ 
+      id, 
+      agentType: 'warren-buffett' 
+    });
+    
+    console.log('Warren Buffett previous messages count:', previousMessages.length);
+    console.log('Warren Buffett chat history being sent:', previousMessages.map(msg => ({
+      role: msg.role,
+      content: Array.isArray(msg.parts) && msg.parts.length > 0 && 'text' in msg.parts[0] 
+        ? (msg.parts[0] as any).text?.substring(0, 50) + '...' 
+        : '',
+    })));
 
     // Save user message
     await saveMessages({
@@ -96,7 +113,9 @@ export async function POST(request: Request) {
               query: message.content,
               chat_history: previousMessages.map(msg => ({
                 role: msg.role,
-                content: msg.parts?.[0]?.text || '',
+                content: Array.isArray(msg.parts) && msg.parts.length > 0 && 'text' in msg.parts[0]
+                  ? (msg.parts[0] as any).text || ''
+                  : '',
                 timestamp: msg.createdAt,
               })),
             }),
@@ -127,32 +146,47 @@ export async function POST(request: Request) {
                   
                   if (data.type === 'agent_finish' || data.type === 'complete') {
                     // Extract the final response
-                    finalResponse = data.data.output || data.data.response || '';
+                    let finalResponse = data.data.output || data.data.response || '';
                     
+                    // Clean up trailing markdown
+                    if (finalResponse.endsWith('```')) {
+                      finalResponse = finalResponse.slice(0, -3).trim();
+                    }
+
                     // Append the complete message to the stream
                     dataStream.writeData({
                       type: 'append-message',
                       message: JSON.stringify({
                         id: assistantId,
                         role: 'assistant',
-                        content: finalResponse,
+                        parts: [{ type: 'text', text: finalResponse }],
                         createdAt: new Date().toISOString(),
                       }),
                     });
                     
                     // Save the assistant message
-                    await saveMessages({
-                      messages: [
-                        {
-                          id: assistantId,
-                          chatId: id,
-                          role: 'assistant',
-                          parts: [{ type: 'text', text: finalResponse }],
-                          attachments: [],
-                          createdAt: new Date(),
-                        },
-                      ],
-                    });
+                    try {
+                      await saveMessages({
+                        messages: [
+                          {
+                            id: assistantId,
+                            chatId: id,
+                            role: 'assistant',
+                            parts: [{ type: 'text', text: finalResponse }],
+                            attachments: [],
+                            createdAt: new Date(),
+                          },
+                        ],
+                      });
+                    } catch (saveError) {
+                      console.error('Failed to save Warren Buffett assistant message:', {
+                        error: saveError,
+                        assistantId,
+                        chatId: id,
+                        messageLength: finalResponse.length,
+                      });
+                      // Don't fail the whole response if save fails
+                    }
                   }
                 } catch (e) {
                   console.error('Error parsing SSE data:', e);

@@ -85,11 +85,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  agentType = 'general',
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  agentType?: 'general' | 'warren-buffett';
 }) {
   try {
     return await db.insert(chat).values({
@@ -98,6 +100,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      agentType,
     });
   } catch (error) {
     throw new ChatSDKError('bad_request:database', 'Failed to save chat');
@@ -216,7 +219,9 @@ export async function saveMessages({
   try {
     return await db.insert(message).values(messages);
   } catch (error) {
-    throw new ChatSDKError('bad_request:database', 'Failed to save messages');
+    // include underlying error message as cause to aid debugging
+    const cause = error instanceof Error ? error.message : undefined;
+    throw new ChatSDKError('bad_request:database', cause ?? 'Failed to save messages');
   }
 }
 
@@ -231,6 +236,40 @@ export async function getMessagesByChatId({ id }: { id: string }) {
     throw new ChatSDKError(
       'bad_request:database',
       'Failed to get messages by chat id',
+    );
+  }
+}
+
+export async function getMessagesByChatIdAndAgentType({ 
+  id, 
+  agentType 
+}: { 
+  id: string;
+  agentType: 'general' | 'warren-buffett';
+}) {
+  try {
+    return await db
+      .select({
+        id: message.id,
+        chatId: message.chatId,
+        role: message.role,
+        parts: message.parts,
+        attachments: message.attachments,
+        createdAt: message.createdAt,
+      })
+      .from(message)
+      .innerJoin(chat, eq(message.chatId, chat.id))
+      .where(
+        and(
+          eq(message.chatId, id),
+          eq(chat.agentType, agentType)
+        )
+      )
+      .orderBy(asc(message.createdAt));
+  } catch (error) {
+    throw new ChatSDKError(
+      'bad_request:database',
+      'Failed to get messages by chat id and agent type',
     );
   }
 }
