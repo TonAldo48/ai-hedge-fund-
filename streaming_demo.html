@@ -283,9 +283,8 @@
             isAnalyzing = true;
             
             try {
-                // In a real app, you'd call your API endpoint
-                // For demo purposes, we'll simulate the streaming
-                await simulateStreaming(query);
+                // Connect to the real streaming API
+                await realStreaming(query);
                 
             } catch (error) {
                 addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
@@ -297,103 +296,24 @@
             isAnalyzing = false;
         }
         
-        async function simulateStreaming(query) {
-            // Simulate the streaming events that would come from your API
-            const events = [
-                { type: 'start', data: { message: '🎯 Starting Warren Buffett analysis...' } },
-                { type: 'llm_thinking', data: { message: '🤔 Warren Buffett is thinking...' } },
-                { type: 'llm_thought', data: { thought: 'I need to analyze this company\'s fundamentals first' } },
-                { type: 'agent_action', data: { tool: 'warren_buffett_fundamentals_analysis', tool_input: 'TSLA' } },
-                { type: 'tool_start', data: { tool_name: 'Fundamentals Analysis', input: 'TSLA' } },
-                { type: 'tool_end', data: { output: 'ROE: 10.4%, Debt-to-Equity: 0.7, Operating Margin: 9.5%' } },
-                { type: 'llm_thought', data: { thought: 'Now let me check the competitive moat strength' } },
-                { type: 'agent_action', data: { tool: 'warren_buffett_moat_analysis', tool_input: 'TSLA' } },
-                { type: 'tool_start', data: { tool_name: 'Moat Analysis', input: 'TSLA' } },
-                { type: 'tool_end', data: { output: 'Score: 0/3 - ROE not consistently above 15%' } },
-                { type: 'llm_thought', data: { thought: 'I should also examine earnings consistency' } },
-                { type: 'agent_action', data: { tool: 'warren_buffett_consistency_analysis', tool_input: 'TSLA' } },
-                { type: 'tool_start', data: { tool_name: 'Consistency Analysis', input: 'TSLA' } },
-                { type: 'tool_end', data: { output: 'Inconsistent earnings growth pattern; 897.9% total growth' } },
-                { type: 'llm_thought', data: { thought: 'Finally, let me calculate the intrinsic value' } },
-                { type: 'agent_action', data: { tool: 'warren_buffett_intrinsic_value_analysis', tool_input: 'TSLA' } },
-                { type: 'tool_start', data: { tool_name: 'Intrinsic Value Analysis', input: 'TSLA' } },
-                { type: 'tool_end', data: { output: 'Intrinsic Value: $344.8B, Market Cap: $993.9B, Margin of Safety: -65%' } },
-                { type: 'complete', data: { 
-                    response: `Tesla presents an interesting case, but from my value investing perspective, I see several concerns. The company's fundamentals show a weak ROE of 10.4% and inconsistent earnings growth, despite impressive total growth of 897.9% over the past decade. 
-
-Most concerning is the lack of a durable competitive moat - Tesla's margins and returns don't meet my threshold of consistent excellence. The intrinsic value analysis suggests the stock is significantly overvalued, with a negative 65% margin of safety.
-
-While Tesla is certainly at the forefront of transformative technology, the current valuation doesn't provide the margin of safety I look for. As I always say, "Price is what you pay, value is what you get." At these levels, you're paying a premium price for uncertain future value.
-
-For a long-term value investor, I'd wait for a more attractive entry point or look for companies with more predictable earnings and stronger competitive positions.`
-                }}
-            ];
-            
-            for (const event of events) {
-                await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1200));
-                displayStreamingEvent(event);
-            }
-        }
-        
-        function displayStreamingEvent(event) {
-            const { type, data } = event;
-            
-            switch (type) {
-                case 'start':
-                    addMessage(data.message, 'status', 'action');
-                    break;
-                    
-                case 'llm_thinking':
-                    addMessage(data.message, 'status', 'thinking');
-                    break;
-                    
-                case 'llm_thought':
-                    addMessage(`💡 Thought: ${data.thought}`, 'status', 'thinking');
-                    break;
-                    
-                case 'agent_action':
-                    addMessage(`🔧 Using: ${data.tool.replace('warren_buffett_', '').replace('_', ' ')}`, 'status', 'action');
-                    break;
-                    
-                case 'tool_start':
-                    addMessage(`⚡ Running ${data.tool_name} for ${data.input}...`, 'status', 'tool');
-                    break;
-                    
-                case 'tool_end':
-                    addMessage(`📊 Data: ${data.output}`, 'status', 'tool');
-                    break;
-                    
-                case 'complete':
-                    addMessage(data.response, 'bot');
-                    break;
-                    
-                case 'error':
-                    addMessage(data.error, 'status', 'error');
-                    break;
-            }
-        }
-        
-        // Enable Enter key to send
-        document.getElementById('queryInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !isAnalyzing) {
-                sendQuery();
-            }
-        });
-        
-        // Real implementation would connect to your streaming endpoint like this:
-        /*
         async function realStreaming(query) {
-            const response = await fetch('/warren-buffett/analyze-streaming', {
+            const response = await fetch('http://localhost:8001/hedge-fund/run', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-API-Key': 'your-api-key'
+                    'Content-Type': 'application/json'
+                    // Note: API key not required in development mode
                 },
                 body: JSON.stringify({
                     query: query,
+                    agent: 'warren_buffett',
+                    model: 'gpt-4o-mini',
                     chat_history: []
                 })
             });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -407,13 +327,98 @@ For a long-term value investor, I'd wait for a more attractive entry point or lo
                 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
-                        const eventData = JSON.parse(line.slice(6));
-                        displayStreamingEvent(eventData);
+                        try {
+                            const eventData = JSON.parse(line.slice(6));
+                            displayStreamingEvent(eventData);
+                        } catch (e) {
+                            console.log('Error parsing streaming data:', e, line);
+                        }
                     }
                 }
             }
         }
-        */
+        
+        function displayStreamingEvent(event) {
+            const type = event.type;
+            const data = event.data || event;
+            
+            switch (type) {
+                case 'start':
+                    addMessage(`🎯 ${data.message || 'Starting Warren Buffett analysis...'}`, 'status', 'action');
+                    break;
+                    
+                case 'agent_thinking':
+                    addMessage(`💭 ${data.thought || 'Warren Buffett is thinking...'}`, 'status', 'thinking');
+                    break;
+                    
+                case 'llm_thinking':
+                    addMessage(`🤔 ${data.message || 'Warren Buffett is thinking...'}`, 'status', 'thinking');
+                    break;
+                    
+                case 'llm_thought':
+                    addMessage(`💡 Thought: ${data.thought}`, 'status', 'thinking');
+                    break;
+                    
+                case 'agent_action':
+                    const toolName = data.tool ? data.tool.replace('warren_buffett_', '').replace(/_/g, ' ') : 'analysis tool';
+                    addMessage(`🔧 Using: ${toolName}`, 'status', 'action');
+                    if (data.tool_input) {
+                        addMessage(`   Input: ${data.tool_input}`, 'status', 'action');
+                    }
+                    break;
+                    
+                case 'tool_start':
+                    addMessage(`⚡ ${data.message || 'Running analysis...'}`, 'status', 'tool');
+                    if (data.details) {
+                        addMessage(`   ${data.details}`, 'status', 'tool');
+                    }
+                    break;
+                    
+                case 'tool_end':
+                    addMessage(`✅ ${data.message || 'Analysis complete'}`, 'status', 'tool');
+                    if (data.details) {
+                        addMessage(`   ${data.details}`, 'status', 'tool');
+                    }
+                    break;
+                    
+                case 'agent_finish':
+                    addMessage('✅ Analysis complete!', 'status', 'action');
+                    break;
+                    
+                case 'complete':
+                    addMessage(data.response || data.message || 'Analysis complete', 'bot');
+                    break;
+                    
+                case 'error':
+                    addMessage(`❌ ${data.error || data.message || 'An error occurred'}`, 'status', 'error');
+                    break;
+                    
+                case 'heartbeat':
+                    addMessage(`💓 ${data.message || 'Processing...'}`, 'status', 'thinking');
+                    break;
+                    
+                case 'stream_end':
+                    // Don't show stream end message
+                    break;
+                    
+                default:
+                    // Handle any other event types
+                    console.log('Unknown event type:', type, data);
+                    if (data.message) {
+                        addMessage(data.message, 'status', 'thinking');
+                    }
+                    break;
+            }
+        }
+        
+        // Enable Enter key to send
+        document.getElementById('queryInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !isAnalyzing) {
+                sendQuery();
+            }
+        });
+        
+
     </script>
 </body>
 </html> 

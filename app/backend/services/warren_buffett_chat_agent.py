@@ -348,27 +348,92 @@ class StreamingCallbackHandler(BaseCallbackHandler):
     def on_tool_start(self, serialized: Dict[str, Any], input_str: str, **kwargs) -> Any:
         """Called when a tool starts."""
         tool_name = serialized.get("name", "Unknown tool")
+        
+        # Create specific messages based on the tool type
+        if "fundamentals" in tool_name:
+            message = f"📊 Analyzing {input_str} fundamentals..."
+            details = "Calculating ROE, debt ratios, operating margins, and liquidity metrics"
+        elif "moat" in tool_name:
+            message = f"🏰 Evaluating {input_str} competitive moat..."
+            details = "Checking for durable competitive advantages and pricing power"
+        elif "consistency" in tool_name:
+            message = f"📈 Examining {input_str} earnings consistency..."
+            details = "Analyzing earnings stability and growth patterns over time"
+        elif "management" in tool_name:
+            message = f"👔 Assessing {input_str} management quality..."
+            details = "Evaluating capital allocation, dividends, and shareholder policies"
+        elif "intrinsic_value" in tool_name:
+            message = f"💰 Calculating {input_str} intrinsic value..."
+            details = "Running DCF model with owner earnings and margin of safety"
+        elif "owner_earnings" in tool_name:
+            message = f"💵 Computing {input_str} owner earnings..."
+            details = "Calculating true cash-generating ability of the business"
+        else:
+            message = f"⚡ Running {tool_name} for {input_str}..."
+            details = f"Performing analysis on {input_str}"
+            
         self._send_event_sync("tool_start", {
             "tool_name": tool_name,
             "input": input_str,
-            "message": f"⚡ Running {tool_name} analysis...",
-            "details": f"Fetching data for: {input_str}"
+            "message": message,
+            "details": details
         })
     
     def on_tool_end(self, output: str, **kwargs) -> Any:
         """Called when a tool ends."""
+        
+        # Extract key information from the output to make messages more specific
+        message = "📊 Data received"
+        details = "Processing results..."
+        
+        try:
+            if "ROE" in output and "debt" in output:
+                message = "📊 Fundamentals data collected"
+                details = "Found ROE, debt ratios, margins, and liquidity metrics"
+            elif "moat" in output or "score" in output:
+                message = "🏰 Moat analysis complete"
+                details = "Competitive advantage assessment finished"
+            elif "earnings" in output and "growth" in output:
+                message = "📈 Earnings patterns analyzed"
+                details = "Growth consistency evaluation complete"
+            elif "dilution" in output or "dividends" in output:
+                message = "👔 Management evaluation done"
+                details = "Capital allocation assessment complete"
+            elif "intrinsic_value" in output or "margin_of_safety" in output:
+                message = "💰 Valuation model complete"
+                details = "DCF calculation and margin of safety determined"
+            elif "owner_earnings" in output:
+                message = "💵 Owner earnings calculated"
+                details = "True cash-generating ability assessed"
+        except:
+            pass  # Use default message if parsing fails
+            
         self._send_event_sync("tool_end", {
             "output": output[:200] + "..." if len(output) > 200 else output,
-            "message": "📊 Analysis data received",
-            "details": "Processing financial metrics..."
+            "message": message,
+            "details": details
         })
     
     def on_llm_start(self, serialized: Dict[str, Any], prompts: List[str], **kwargs) -> Any:
         """Called when LLM starts thinking."""
         self.current_step += 1
+        
+        # Vary the thinking messages to be more specific
+        thinking_messages = [
+            "🤔 Warren Buffett is evaluating the analysis...",
+            "🤔 Considering investment implications...",
+            "🤔 Weighing the risk-reward balance...",
+            "🤔 Applying value investing principles...",
+            "🤔 Synthesizing financial data...",
+            "🤔 Determining next analysis step..."
+        ]
+        
+        # Use step to rotate through different messages
+        message_index = (self.current_step - 1) % len(thinking_messages)
+        
         self._send_event_sync("llm_thinking", {
-            "message": "🤔 Warren Buffett is thinking...",
-            "details": "Analyzing the data and formulating response",
+            "message": thinking_messages[message_index],
+            "details": "Processing data with Buffett's investment criteria",
             "step": self.current_step
         })
     
@@ -590,10 +655,21 @@ Thought: {agent_scratchpad}"""
                 event_json = await asyncio.wait_for(stream_queue.get(), timeout=1.0)
                 yield event_json
             except asyncio.TimeoutError:
-                # Send heartbeat to keep connection alive
+                # Send contextual heartbeat to keep connection alive
+                heartbeat_messages = [
+                    "⏳ Retrieving financial data from market sources...",
+                    "⏳ Cross-referencing industry benchmarks...",
+                    "⏳ Applying Buffett's investment criteria...",
+                    "⏳ Calculating complex financial metrics...",
+                    "⏳ Evaluating long-term business prospects...",
+                    "⏳ Assessing management track record...",
+                    "⏳ Comparing to similar investments..."
+                ]
+                
+                import random
                 heartbeat = {
                     "type": "heartbeat",
-                    "data": {"message": "Processing..."},
+                    "data": {"message": random.choice(heartbeat_messages)},
                     "timestamp": datetime.now().isoformat()
                 }
                 yield json.dumps(heartbeat)

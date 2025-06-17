@@ -35,9 +35,9 @@ async def test_streaming_analysis():
                 "http://localhost:8000/warren-buffett/analyze-streaming",
                 json=request_data,
                 headers={
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/json", 
                     "Accept": "text/event-stream",
-                    "X-API-Key": "test-key-12345"  # Use your API key
+                    "X-API-Key": "GFTbUh8EI9TFe5QK9aN3z_Aw"
                 }
             ) as response:
                 
@@ -106,18 +106,17 @@ async def display_event(event: dict):
         print(f"   Input: {tool_input}")
         
     elif event_type == "tool_start":
-        tool_name = data.get("tool_name", "")
-        input_data = data.get("input", "")
-        print(f"⚡ [{time_str}] Running {tool_name}...")
-        print(f"   Analyzing: {input_data}")
+        message = data.get("message", "")
+        details = data.get("details", "")
+        print(f"⚡ [{time_str}] {message}")
+        print(f"   {details}")
         
     elif event_type == "tool_end":
-        output = data.get("output", "")
-        print(f"📊 [{time_str}] Analysis data received")
-        if len(output) > 100:
-            print(f"   Data: {output[:100]}...")
-        else:
-            print(f"   Data: {output}")
+        message = data.get("message", "Analysis complete")
+        details = data.get("details", "")
+        print(f"✅ [{time_str}] {message}")
+        if details:
+            print(f"   {details}")
             
     elif event_type == "agent_finish":
         print(f"✅ [{time_str}] Analysis complete!")
