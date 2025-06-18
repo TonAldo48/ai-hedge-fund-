@@ -115,10 +115,11 @@ class StreamingCallbackHandler(BaseCallbackHandler):
 class BaseChatAgent(ABC):
     """Base class for all individual agent chat interfaces."""
     
-    def __init__(self, agent_name: str, model_name: str = "gpt-4o-mini", model_provider: str = "openai"):
+    def __init__(self, agent_name: str, model_name: str = "gpt-4o-mini", model_provider: str = "openai", max_history_messages: int = 5):
         self.agent_name = agent_name
         self.model_name = model_name
         self.model_provider = model_provider
+        self.max_history_messages = max_history_messages
         
         # Initialize LLM using existing infrastructure
         self.llm = get_model(model_name, model_provider)
@@ -182,7 +183,9 @@ Thought: I should analyze this step by step using my available tools.
         # Create context from chat history if provided
         context = ""
         if chat_history:
-            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history[-5:]])
+            # Use the last N messages, where N is configurable
+            relevant_history = chat_history[-self.max_history_messages:] if len(chat_history) > self.max_history_messages else chat_history
+            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in relevant_history])
             query = f"Context from previous conversation:\n{context}\n\nCurrent question: {query}"
         
         # Run the agent
@@ -219,7 +222,9 @@ Thought: I should analyze this step by step using my available tools.
         # Create context from chat history if provided
         context = ""
         if chat_history:
-            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history[-5:]])
+            # Use the last N messages, where N is configurable
+            relevant_history = chat_history[-self.max_history_messages:] if len(chat_history) > self.max_history_messages else chat_history
+            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in relevant_history])
             query = f"Context from previous conversation:\n{context}\n\nCurrent question: {query}"
         
         # Run agent in thread

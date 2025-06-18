@@ -1,24 +1,19 @@
-import { Chat } from '@/components/chat';
-import type { Session } from 'next-auth';
-import { auth } from '../../../../(auth)/auth';
-import { generateUUID } from '@/lib/utils';
+import { AgentChat } from '@/components/agent-chat';
 
-export default async function AgentChatPage() {
-  const session = await auth() as Session;
-  const id = generateUUID();
+const benGrahamData = {
+  name: 'Ben Graham',
+  description: 'The father of value investing, focused on margin of safety and intrinsic value',
+  expertise: ['Margin of Safety', 'Intrinsic Value', 'Financial Strength', 'Risk Management', 'Value Investing'],
+  icon: '📚'
+};
 
-  // Start with empty messages so the greeting shows
-  const initialMessages: any[] = [];
-
+export default function BenGrahamChatPage() {
   return (
-    <Chat
-      id={id}
-      initialMessages={initialMessages}
-      initialChatModel="gpt-4o"
-      initialVisibilityType="private"
-      isReadonly={false}
-      session={session}
-      autoResume={false}
-    />
+    <div className="h-screen flex flex-col">
+      <AgentChat 
+        agentId="ben_graham" 
+        agentData={benGrahamData}
+      />
+    </div>
   );
 }

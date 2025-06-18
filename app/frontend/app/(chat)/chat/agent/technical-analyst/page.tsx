@@ -1,24 +1,19 @@
-import { Chat } from '@/components/chat';
-import type { Session } from 'next-auth';
-import { auth } from '../../../../(auth)/auth';
-import { generateUUID } from '@/lib/utils';
+import { AgentChat } from '@/components/agent-chat';
 
-export default async function AgentChatPage() {
-  const session = await auth() as Session;
-  const id = generateUUID();
+const technicalAnalystData = {
+  name: 'Technical Analyst',
+  description: 'Chart and technical pattern expert focused on price action and market indicators',
+  expertise: ['Chart Patterns', 'Technical Indicators', 'Trend Analysis', 'Support/Resistance', 'Volume Analysis'],
+  icon: '📊'
+};
 
-  // Start with empty messages so the greeting shows
-  const initialMessages: any[] = [];
-
+export default function TechnicalAnalystChatPage() {
   return (
-    <Chat
-      id={id}
-      initialMessages={initialMessages}
-      initialChatModel="gpt-4o"
-      initialVisibilityType="private"
-      isReadonly={false}
-      session={session}
-      autoResume={false}
-    />
+    <div className="h-screen flex flex-col">
+      <AgentChat 
+        agentId="technical_analyst" 
+        agentData={technicalAnalystData}
+      />
+    </div>
   );
 }

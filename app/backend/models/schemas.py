@@ -24,6 +24,7 @@ class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
     stream: bool = False
+    chat_history: Optional[List[ChatMessage]] = None
 
 
 class ChatResponse(BaseModel):

@@ -1,24 +1,19 @@
-import { Chat } from '@/components/chat';
-import type { Session } from 'next-auth';
-import { auth } from '../../../../(auth)/auth';
-import { generateUUID } from '@/lib/utils';
+import { AgentChat } from '@/components/agent-chat';
 
-export default async function CharlieMungerChatPage() {
-  const session = await auth() as Session;
-  const id = generateUUID();
+const charlieMungerData = {
+  name: 'Charlie Munger',
+  description: 'Philosopher investor focused on mental models, quality businesses, and long-term thinking',
+  expertise: ['Mental Models', 'Business Moats', 'Predictability', 'Psychology', 'Decision Making'],
+  icon: '🧠'
+};
 
-  // Start with empty messages so the greeting shows
-  const initialMessages: any[] = [];
-
+export default function CharlieMungerChatPage() {
   return (
-    <Chat
-      id={id}
-      initialMessages={initialMessages}
-      initialChatModel="gpt-4o"
-      initialVisibilityType="private"
-      isReadonly={false}
-      session={session}
-      autoResume={false}
-    />
+    <div className="h-screen flex flex-col">
+      <AgentChat 
+        agentId="charlie_munger" 
+        agentData={charlieMungerData}
+      />
+    </div>
   );
 } 

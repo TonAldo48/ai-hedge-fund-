@@ -163,7 +163,7 @@ async def analyze_with_agent(
         process_func = AVAILABLE_AGENTS[agent_name]["process_query"]
         
         # Process the query
-        result = await process_func(request.query, request.chat_history)
+        result = await process_func(request.message, request.chat_history)
         
         return ChatResponse(**result)
         
@@ -199,7 +199,7 @@ async def stream_agent_analysis(
         
         # Create the streaming generator
         async def event_generator():
-            async for event in agent.analyze_streaming(request.query, request.chat_history):
+            async for event in agent.analyze_streaming(request.message, request.chat_history):
                 yield f"data: {event}\n\n"
             yield "data: [DONE]\n\n"
         

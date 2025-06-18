@@ -1,24 +1,19 @@
-import { Chat } from '@/components/chat';
-import type { Session } from 'next-auth';
-import { auth } from '../../../../(auth)/auth';
-import { generateUUID } from '@/lib/utils';
+import { AgentChat } from '@/components/agent-chat';
 
-export default async function PeterLynchChatPage() {
-  const session = await auth() as Session;
-  const id = generateUUID();
+const peterLynchData = {
+  name: 'Peter Lynch',
+  description: 'Growth investing expert known for finding "tenbaggers" and investing in what you know',
+  expertise: ['Growth Investing', 'PEG Ratio Analysis', 'Consumer Trends', 'Company Research', 'Market Psychology'],
+  icon: '📈'
+};
 
-  // Start with empty messages so the greeting shows
-  const initialMessages: any[] = [];
-
+export default function PeterLynchChatPage() {
   return (
-    <Chat
-      id={id}
-      initialMessages={initialMessages}
-      initialChatModel="gpt-4o"
-      initialVisibilityType="private"
-      isReadonly={false}
-      session={session}
-      autoResume={false}
-    />
+    <div className="h-screen flex flex-col">
+      <AgentChat 
+        agentId="peter_lynch" 
+        agentData={peterLynchData}
+      />
+    </div>
   );
 } 
