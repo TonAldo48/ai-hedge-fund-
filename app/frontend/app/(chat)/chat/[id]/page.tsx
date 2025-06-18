@@ -53,11 +53,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 
   // Determine the correct model based on agentType from database
   const getChatModel = () => {
-    // If this is a Warren Buffett chat, always use warren-buffett model
-    if (chat.agentType === 'warren-buffett') {
-      return 'warren-buffett';
+    // If the chat is associated with a specific agent, use that as the model id
+    if (chat.agentType && chat.agentType !== 'general') {
+      return chat.agentType;
     }
-    
+
     // For regular chats, check cookie preference
     const cookieStore = cookies();
     const chatModelFromCookie = cookieStore.get('chat-model');
@@ -65,6 +65,11 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
   };
 
   const chatModel = getChatModel();
+
+  // Convert agentType (hyphen-separated) to agentId (underscore-separated) if applicable
+  const agentId = chat.agentType && chat.agentType !== 'general'
+    ? chat.agentType.replace(/-/g, '_')
+    : undefined;
 
   return (
     <>
@@ -76,6 +81,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
         isReadonly={session?.user?.id !== chat.userId}
         session={session}
         autoResume={true}
+        {...(agentId && { agentId })}
       />
       <DataStreamHandler id={id} />
     </>

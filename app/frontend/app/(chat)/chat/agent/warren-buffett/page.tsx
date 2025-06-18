@@ -1,12 +1,26 @@
-import { AgentChatUI } from '@/components/agent-chat-ui';
+import { Chat } from '@/components/chat';
+import type { Session } from 'next-auth';
+import { auth } from '../../../../(auth)/auth';
+import { generateUUID } from '@/lib/utils';
+import { DataStreamHandler } from '@/components/data-stream-handler';
 
-const agentData = {
-  name: 'Warren Buffett',
-  description: 'Value investing sage focused on economic moats and long-term growth',
-  expertise: ['Value Investing', 'Economic Moats', 'Management Quality', 'Long-term Strategy'],
-  icon: '🦉',
-};
+export default async function WarrenBuffettPage() {
+  const session = await auth() as Session;
+  const id = generateUUID();
 
-export default function WarrenBuffettPage() {
-  return <AgentChatUI agentId="warren_buffett" agentData={agentData} />;
+  return (
+    <>
+      <Chat
+        id={id}
+        initialMessages={[]}
+        initialChatModel="warren-buffett"
+        initialVisibilityType="private"
+        isReadonly={false}
+        session={session}
+        autoResume={false}
+        agentId="warren_buffett"
+      />
+      <DataStreamHandler id={id} />
+    </>
+  );
 } 

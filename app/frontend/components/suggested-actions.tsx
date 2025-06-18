@@ -426,12 +426,18 @@ function PureSuggestedActions({
           <Button
             variant="ghost"
             onClick={async () => {
-              window.history.replaceState({}, '', `/chat/${chatId}`);
-
-              append({
+              // First append the suggested action message – this triggers backend chat creation
+              await append({
                 role: 'user',
                 content: suggestedAction.description,
               });
+
+              // After the request has been sent, wait briefly to ensure the chat is persisted then update URL
+              setTimeout(() => {
+                if (pathname !== `/chat/${chatId}`) {
+                  router.push(`/chat/${chatId}`);
+                }
+              }, 600);
             }}
             className={`text-left border rounded-xl px-4 py-3.5 text-sm flex flex-col gap-1.5 w-full min-h-fit justify-start items-start ${
               // Famous Investors

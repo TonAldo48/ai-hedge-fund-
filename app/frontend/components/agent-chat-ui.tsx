@@ -7,14 +7,15 @@ import { MultimodalInput } from './multimodal-input';
 import { PreviewMessage, ThinkingMessage } from './message';
 import { useScrollToBottom } from '@/hooks/use-scroll-to-bottom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { SuggestedActions } from './suggested-actions';
 import { cn } from '@/lib/utils';
 import type { Attachment } from 'ai';
+import { AgentGreeting } from './agent-greeting';
 
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY || 'Pb9RPNoA1neVLA6teD-GFTbUh8EI9TFe5QK9aN3z_Aw';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface AgentChatUIProps {
+  chatId: string;
   agentId: string;
   agentData: {
     name: string;
@@ -43,10 +44,11 @@ function convertToUIMessage(message: ChatMessage): any {
   };
 }
 
-export function AgentChatUI({ agentId, agentData }: AgentChatUIProps) {
+export function AgentChatUI({ chatId, agentId, agentData }: AgentChatUIProps) {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const { messages, isLoading, error, sendMessage, stop } = useAgentChat({
+    chatId,
     agentName: agentId,
     apiKey: API_KEY,
     baseUrl: API_URL,
@@ -70,49 +72,31 @@ export function AgentChatUI({ agentId, agentData }: AgentChatUIProps) {
     setTimeout(() => scrollToBottom(), 100);
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setInput(suggestion);
-    setTimeout(() => handleSubmit(), 100);
-  };
 
-  // Suggested questions based on the agent type
-  const suggestedQuestions = {
-    warren_buffett: [
-      "What's Apple's competitive moat?",
-      "Is Microsoft undervalued?",
-      "Analyze Berkshire Hathaway's portfolio"
-    ],
-    peter_lynch: [
-      "Find me potential ten-baggers",
-      "What's Tesla's PEG ratio?", 
-      "Best growth stocks under $50"
-    ],
-    charlie_munger: [
-      "What mental models apply to Amazon?",
-      "Analyze Costco's business model",
-      "Quality businesses to hold forever"
-    ],
-    ben_graham: [
-      "Calculate margin of safety for MSFT",
-      "Find undervalued dividend stocks",
-      "What's the Graham Number for Apple?"
-    ],
-    technical_analyst: [
-      "What's the trend for Bitcoin?",
-      "Key support levels for SPY",
-      "Best chart patterns right now"
-    ]
-  };
-
-  const currentSuggestions = suggestedQuestions[agentId as keyof typeof suggestedQuestions] || [];
 
   // Convert messages to UI format
   const uiMessages = messages.map(convertToUIMessage);
 
+  // Mock append function to satisfy the type requirements
+  const mockAppend = async (message: { role: string; content: string }) => {
+    // For agent chats, we use sendMessage instead of append
+    if (message.role === 'user' && message.content) {
+      setInput(message.content);
+      await sendMessage(message.content);
+    }
+    return null;
+  };
+
+  // Wrapper for handleSubmit to match expected type
+  const wrappedHandleSubmit = (event?: { preventDefault?: () => void }) => {
+    event?.preventDefault?.();
+    handleSubmit();
+  };
+
   return (
     <div className="flex flex-col min-w-0 h-dvh bg-background">
       <ChatHeader
-        chatId={agentId}
+        chatId={chatId}
         selectedModelId={agentData.name}
         selectedVisibilityType="private"
         isReadonly={false}
@@ -124,37 +108,7 @@ export function AgentChatUI({ agentId, agentData }: AgentChatUIProps) {
         className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
       >
         {messages.length === 0 && (
-          <motion.div
-            key="welcome"
-            className="mx-auto max-w-3xl w-full px-4 group/message"
-            initial={{ y: 5, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { delay: 0.8 } }}
-          >
-            <div className="flex flex-col gap-6 pb-4">
-              <div className="flex items-center gap-4">
-                <div className="size-12 flex items-center justify-center rounded-full bg-muted">
-                  <span className="text-2xl">{agentData.icon}</span>
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold">{agentData.name}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {agentData.description}
-                  </p>
-                </div>
-              </div>
-              
-              {currentSuggestions.length > 0 && (
-                <div className="border rounded-lg p-4 bg-muted/50">
-                  <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
-                  <SuggestedActions
-                    suggestions={currentSuggestions}
-                    append={(message) => handleSuggestionClick(message.content)}
-                    isDisabled={isLoading}
-                  />
-                </div>
-              )}
-            </div>
-          </motion.div>
+          <AgentGreeting {...agentData} />
         )}
 
         <AnimatePresence>
@@ -187,7 +141,7 @@ export function AgentChatUI({ agentId, agentData }: AgentChatUIProps) {
               )}
               
               <PreviewMessage
-                chatId={agentId}
+                chatId={chatId}
                 message={message}
                 vote={undefined}
                 isLoading={false}
@@ -221,17 +175,17 @@ export function AgentChatUI({ agentId, agentData }: AgentChatUIProps) {
 
       <form className="flex mx-auto px-4 bg-background pb-4 md:pb-6 gap-2 w-full md:max-w-3xl">
         <MultimodalInput
-          chatId={agentId}
+          chatId={chatId}
           input={input}
           setInput={setInput}
-          handleSubmit={handleSubmit}
-          status={isLoading ? 'in_progress' : 'awaiting_message'}
+          handleSubmit={wrappedHandleSubmit}
+          status={isLoading ? 'submitted' : 'ready'}
           stop={stop}
           attachments={attachments}
           setAttachments={setAttachments}
           messages={uiMessages}
           setMessages={() => {}}
-          append={() => {}}
+          append={mockAppend}
           selectedVisibilityType="private"
         />
       </form>
