@@ -71,7 +71,7 @@ cd app && npm install && npm run setup
 **After running, you can access:**
 - Frontend (Web Interface): http://localhost:5173
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- API Documentation: https://aeeroooo-production.up.railway.app/docs
 
 ---
 
@@ -155,7 +155,7 @@ npm run dev
 You can now access:
 - Frontend application: http://localhost:5173
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- API Documentation: https://aeeroooo-production.up.railway.app/docs
 
 ## Detailed Documentation
 

@@ -12,7 +12,7 @@ def test_streaming_endpoint():
     """Test the streaming endpoint with Server-Sent Events."""
     print("🚀 Testing AI Hedge Fund Streaming API...\n")
     
-    url = "http://localhost:8000/hedge-fund/run"
+    url = "https://aeeroooo-production.up.railway.app/hedge-fund/run"
     headers = {
         "Content-Type": "application/json",
         "Accept": "text/event-stream"

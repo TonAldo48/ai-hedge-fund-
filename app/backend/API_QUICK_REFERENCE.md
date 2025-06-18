@@ -5,7 +5,7 @@
 poetry run python app/backend/run_api.py
 ```
 **API URL:** http://localhost:8000  
-**Docs:** http://localhost:8000/docs
+**Docs:** https://aeeroooo-production.up.railway.app/docs
 
 ---
 
@@ -13,18 +13,18 @@ poetry run python app/backend/run_api.py
 
 ### Health Check
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 ### Available Agents
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 **Popular agents:** `warren_buffett`, `peter_lynch`, `technical_analyst`, `michael_burry`
 
 ### Available Models
 ```bash
-curl http://localhost:8000/hedge-fund/models
+curl https://aeeroooo-production.up.railway.app/hedge-fund/models
 ```
 **Popular models:** `gpt-4o`, `gpt-4o-mini`, `claude-3-5-haiku-latest`
 
@@ -34,7 +34,7 @@ curl http://localhost:8000/hedge-fund/models
 
 ### Single Stock + Single Agent
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
@@ -46,7 +46,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 ### Multi-Stock Portfolio
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL", "MSFT", "GOOGL"],
@@ -63,7 +63,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 ### Basic Streaming
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -77,7 +77,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run" \
 
 ### Enhanced Streaming (Multiple Agents)
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -182,7 +182,7 @@ data: {"type":"complete","data":{"decisions":{...}}}
 
 ### With Reasoning Flag
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],

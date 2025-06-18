@@ -20,8 +20,8 @@ The API will be available at `http://localhost:8000`
 
 ### 2. Access API Documentation
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: https://aeeroooo-production.up.railway.app/docs
+- **ReDoc**: https://aeeroooo-production.up.railway.app/redoc
 
 ## API Endpoints
 

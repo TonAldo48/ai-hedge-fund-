@@ -53,8 +53,8 @@ python -m backend.run_api
 
 4. **Access the API**:
 - API: http://localhost:8000
-- Docs: http://localhost:8000/docs
-- Health: http://localhost:8000/health
+- Docs: https://aeeroooo-production.up.railway.app/docs
+- Health: https://aeeroooo-production.up.railway.app/health
 
 ### Railway Deployment
 

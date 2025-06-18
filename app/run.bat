@@ -170,7 +170,7 @@ echo.
 echo %SUCCESS% AI Hedge Fund web application is now running!
 echo %INFO% Frontend: http://localhost:5173
 echo %INFO% Backend:  http://localhost:8000
-echo %INFO% Docs:     http://localhost:8000/docs
+echo %INFO% Docs:     https://aeeroooo-production.up.railway.app/docs
 echo.
 echo %INFO% Press any key to stop both services...
 pause >nul

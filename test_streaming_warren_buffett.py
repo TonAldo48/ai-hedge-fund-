@@ -32,7 +32,7 @@ async def test_streaming_analysis():
         try:
             async with client.stream(
                 "POST",
-                "http://localhost:8000/warren-buffett/analyze-streaming",
+                "https://aeeroooo-production.up.railway.app/warren-buffett/analyze-streaming",
                 json=request_data,
                 headers={
                     "Content-Type": "application/json",

@@ -11,7 +11,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8000/health",
+          "raw": "https://aeeroooo-production.up.railway.app/health",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8000",
@@ -25,7 +25,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8000/hedge-fund/agents",
+          "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/agents",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8000",
@@ -39,7 +39,7 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "http://localhost:8000/hedge-fund/models",
+          "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/models",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8000",
@@ -62,7 +62,7 @@
           "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\", \"GOOGL\"],\n  \"selected_agents\": [\"technical_analyst\", \"fundamental_analyst\", \"sentiment_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 100000,\n  \"margin_requirement\": 0\n}"
         },
         "url": {
-          "raw": "http://localhost:8000/hedge-fund/run-sync",
+          "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8000",
@@ -85,7 +85,7 @@
           "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\"],\n  \"selected_agents\": [\"technical_analyst\", \"risk_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 50000,\n  \"margin_requirement\": 0,\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-03-31\"\n}"
         },
         "url": {
-          "raw": "http://localhost:8000/hedge-fund/run",
+          "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/run",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8000",

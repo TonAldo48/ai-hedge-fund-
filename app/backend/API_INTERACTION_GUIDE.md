@@ -13,14 +13,14 @@ This guide documents real interactions with the AI Hedge Fund API, showing the c
 poetry run python app/backend/run_api.py
 
 # Server runs at: http://localhost:8000
-# API Documentation: http://localhost:8000/docs
+# API Documentation: https://aeeroooo-production.up.railway.app/docs
 ```
 
 ### 2. Basic Health Check
 
 **Request:**
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 **Response:**
@@ -52,7 +52,7 @@ curl http://localhost:8000/health
 
 **Request:**
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 
 **Response:**
@@ -83,7 +83,7 @@ curl http://localhost:8000/hedge-fund/agents
 
 **Request:**
 ```bash
-curl http://localhost:8000/hedge-fund/models
+curl https://aeeroooo-production.up.railway.app/hedge-fund/models
 ```
 
 **Response (truncated):**
@@ -117,7 +117,7 @@ curl http://localhost:8000/hedge-fund/models
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
@@ -181,7 +181,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL", "MSFT", "GOOGL"],
@@ -240,7 +240,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
@@ -283,7 +283,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
@@ -346,7 +346,7 @@ import json
 from datetime import datetime, timedelta
 
 # Setup
-url = "http://localhost:8000/hedge-fund/run"
+url = "https://aeeroooo-production.up.railway.app/hedge-fund/run"
 headers = {
     "Content-Type": "application/json",
     "Accept": "text/event-stream"
@@ -466,7 +466,7 @@ Use exact case-sensitive values:
 
 1. **404 on `/health`**
    - Check if API server is running
-   - Verify URL: `http://localhost:8000/health`
+   - Verify URL: `https://aeeroooo-production.up.railway.app/health`
 
 2. **"Response ended prematurely"**
    - Normal for quick analyses
@@ -485,10 +485,10 @@ Use exact case-sensitive values:
 
 ```bash
 # Check server status
-curl http://localhost:8000/
+curl https://aeeroooo-production.up.railway.app/
 
 # Test simple endpoint
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 
 # Validate JSON
 echo '{"test": "json"}' | python -m json.tool

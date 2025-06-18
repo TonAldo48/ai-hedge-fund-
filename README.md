@@ -241,7 +241,7 @@ The hedge fund also includes a modern REST API with real-time streaming capabili
 poetry run python app/backend/run_api.py
 
 # API will be available at: http://localhost:8000
-# Interactive docs: http://localhost:8000/docs
+# Interactive docs: https://aeeroooo-production.up.railway.app/docs
 ```
 
 #### Key API Features
@@ -255,17 +255,17 @@ poetry run python app/backend/run_api.py
 
 **Health Check:**
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 **List Available Agents:**
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 
 **Run Analysis with Reasoning:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
@@ -278,7 +278,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Stream Real-time Analysis:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{

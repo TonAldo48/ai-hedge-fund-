@@ -49,7 +49,7 @@ def test_api_endpoint():
     
     # Check if server is running
     try:
-        health_response = requests.get("http://localhost:8000/health", timeout=5)
+        health_response = requests.get("https://aeeroooo-production.up.railway.app/health", timeout=5)
         if health_response.status_code != 200:
             print("❌ Server not healthy")
             return None
@@ -81,7 +81,7 @@ def test_api_endpoint():
         print("Sending request to API...")
         
         response = requests.post(
-            "http://localhost:8000/chat/analyze",
+            "https://aeeroooo-production.up.railway.app/chat/analyze",
             json=payload,
             headers=headers,
             timeout=60  # Give it time to run analysis
@@ -113,7 +113,7 @@ def test_examples_endpoint():
     print("=" * 50)
     
     try:
-        response = requests.get("http://localhost:8000/chat/examples", timeout=5)
+        response = requests.get("https://aeeroooo-production.up.railway.app/chat/examples", timeout=5)
         
         if response.status_code == 200:
             examples = response.json()
