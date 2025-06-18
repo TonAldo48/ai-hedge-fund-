@@ -90,7 +90,7 @@ export async function POST(request: Request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-API-Key': 'Pb9RPNoA1neVLA6teD-GFTbUh8EI9TFe5QK9aN3z_Aw',
+              'Authorization': 'Bearer Pb9RPNoA1neVLA6teD-GFTbUh8EI9TFe5QK9aN3z_Aw',
             },
             body: JSON.stringify({
               query: message.content,
