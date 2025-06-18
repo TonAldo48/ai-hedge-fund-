@@ -53,3 +53,4 @@ Thumbs.db
 
 # Frontend
 node_modules
+.vercel
