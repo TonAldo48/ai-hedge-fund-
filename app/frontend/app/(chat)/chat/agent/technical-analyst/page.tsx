@@ -1,19 +1,12 @@
-import { AgentChat } from '@/components/agent-chat';
+import { AgentChatUI } from '@/components/agent-chat-ui';
 
-const technicalAnalystData = {
+const agentData = {
   name: 'Technical Analyst',
-  description: 'Chart and technical pattern expert focused on price action and market indicators',
-  expertise: ['Chart Patterns', 'Technical Indicators', 'Trend Analysis', 'Support/Resistance', 'Volume Analysis'],
-  icon: '📊'
+  description: 'Chart patterns and technical indicators expert',
+  expertise: ['Chart Analysis', 'Technical Indicators', 'Support/Resistance', 'Trading Patterns'],
+  icon: '📉',
 };
 
-export default function TechnicalAnalystChatPage() {
-  return (
-    <div className="h-screen flex flex-col">
-      <AgentChat 
-        agentId="technical_analyst" 
-        agentData={technicalAnalystData}
-      />
-    </div>
-  );
+export default function TechnicalAnalystPage() {
+  return <AgentChatUI agentId="technical_analyst" agentData={agentData} />;
 }

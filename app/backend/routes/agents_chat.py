@@ -9,6 +9,7 @@ import asyncio
 
 from app.backend.models.schemas import ChatRequest, ChatResponse
 from app.backend.middleware.auth import verify_api_key
+from app.backend.services.streaming_adapter import LangChainToSSEAdapter
 
 # Import all agent modules
 from app.backend.services.warren_buffett_chat_agent import (
@@ -197,11 +198,17 @@ async def stream_agent_analysis(
         get_agent_func = AVAILABLE_AGENTS[agent_name]["get_agent"]
         agent = get_agent_func()
         
-        # Create the streaming generator
+        # Create the streaming generator with proper SSE formatting
         async def event_generator():
-            async for event in agent.analyze_streaming(request.message, request.chat_history):
-                yield f"data: {event}\n\n"
-            yield "data: [DONE]\n\n"
+            # Get the raw LangChain events
+            langchain_events = agent.analyze_streaming(request.message, request.chat_history)
+            
+            # Convert to SSE format using our adapter
+            async for sse_event in LangChainToSSEAdapter.convert_to_sse(
+                langchain_events, 
+                include_reasoning=True
+            ):
+                yield sse_event
         
         return StreamingResponse(
             event_generator(),
@@ -209,7 +216,10 @@ async def stream_agent_analysis(
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "X-Accel-Buffering": "no"
+                "X-Accel-Buffering": "no",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
             }
         )
         

@@ -1,19 +1,12 @@
-import { AgentChat } from '@/components/agent-chat';
+import { AgentChatUI } from '@/components/agent-chat-ui';
 
-const peterLynchData = {
+const agentData = {
   name: 'Peter Lynch',
-  description: 'Growth investing expert known for finding "tenbaggers" and investing in what you know',
-  expertise: ['Growth Investing', 'PEG Ratio Analysis', 'Consumer Trends', 'Company Research', 'Market Psychology'],
-  icon: '📈'
+  description: 'Growth at a reasonable price (GARP) investing expert',
+  expertise: ['Growth Stocks', 'PEG Ratio', 'Retail Investing', 'Ten-Baggers'],
+  icon: '📈',
 };
 
-export default function PeterLynchChatPage() {
-  return (
-    <div className="h-screen flex flex-col">
-      <AgentChat 
-        agentId="peter_lynch" 
-        agentData={peterLynchData}
-      />
-    </div>
-  );
+export default function PeterLynchPage() {
+  return <AgentChatUI agentId="peter_lynch" agentData={agentData} />;
 } 

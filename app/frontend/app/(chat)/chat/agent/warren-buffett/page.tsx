@@ -1,19 +1,12 @@
-import { AgentChat } from '@/components/agent-chat';
+import { AgentChatUI } from '@/components/agent-chat-ui';
 
-const warrenBuffettData = {
+const agentData = {
   name: 'Warren Buffett',
-  description: 'Value investing legend focused on fundamental analysis and long-term wealth creation',
-  expertise: ['Value Investing', 'Fundamental Analysis', 'Competitive Moats', 'Capital Allocation', 'Long-term Thinking'],
-  icon: '🎩'
+  description: 'Value investing sage focused on economic moats and long-term growth',
+  expertise: ['Value Investing', 'Economic Moats', 'Management Quality', 'Long-term Strategy'],
+  icon: '🦉',
 };
 
-export default function WarrenBuffettChatPage() {
-  return (
-    <div className="h-screen flex flex-col">
-      <AgentChat 
-        agentId="warren_buffett" 
-        agentData={warrenBuffettData}
-      />
-    </div>
-  );
+export default function WarrenBuffettPage() {
+  return <AgentChatUI agentId="warren_buffett" agentData={agentData} />;
 } 

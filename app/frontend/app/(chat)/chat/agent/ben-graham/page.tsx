@@ -1,19 +1,12 @@
-import { AgentChat } from '@/components/agent-chat';
+import { AgentChatUI } from '@/components/agent-chat-ui';
 
-const benGrahamData = {
+const agentData = {
   name: 'Ben Graham',
-  description: 'The father of value investing, focused on margin of safety and intrinsic value',
-  expertise: ['Margin of Safety', 'Intrinsic Value', 'Financial Strength', 'Risk Management', 'Value Investing'],
-  icon: '📚'
+  description: 'Father of value investing and margin of safety principles',
+  expertise: ['Value Investing', 'Margin of Safety', 'Fundamental Analysis', 'Conservative Investing'],
+  icon: '📊',
 };
 
-export default function BenGrahamChatPage() {
-  return (
-    <div className="h-screen flex flex-col">
-      <AgentChat 
-        agentId="ben_graham" 
-        agentData={benGrahamData}
-      />
-    </div>
-  );
+export default function BenGrahamPage() {
+  return <AgentChatUI agentId="ben_graham" agentData={agentData} />;
 }

@@ -29,6 +29,7 @@ export function Chat({
   isReadonly,
   session,
   autoResume,
+  agentId,
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -37,6 +38,7 @@ export function Chat({
   isReadonly: boolean;
   session: Session;
   autoResume: boolean;
+  agentId?: string;
 }) {
   const { mutate } = useSWRConfig();
 
@@ -69,6 +71,7 @@ export function Chat({
       message: body.messages.at(-1),
       selectedChatModel: initialChatModel,
       selectedVisibilityType: visibilityType,
+      ...(agentId && { agentId }),
     }),
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));

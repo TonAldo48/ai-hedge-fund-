@@ -1,19 +1,12 @@
-import { AgentChat } from '@/components/agent-chat';
+import { AgentChatUI } from '@/components/agent-chat-ui';
 
-const charlieMungerData = {
+const agentData = {
   name: 'Charlie Munger',
-  description: 'Philosopher investor focused on mental models, quality businesses, and long-term thinking',
-  expertise: ['Mental Models', 'Business Moats', 'Predictability', 'Psychology', 'Decision Making'],
-  icon: '🧠'
+  description: 'Mental models and quality business advocate',
+  expertise: ['Mental Models', 'Quality Businesses', 'Psychology', 'Long-term Thinking'],
+  icon: '🧠',
 };
 
-export default function CharlieMungerChatPage() {
-  return (
-    <div className="h-screen flex flex-col">
-      <AgentChat 
-        agentId="charlie_munger" 
-        agentData={charlieMungerData}
-      />
-    </div>
-  );
+export default function CharlieMungerPage() {
+  return <AgentChatUI agentId="charlie_munger" agentData={agentData} />;
 } 
