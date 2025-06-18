@@ -6,6 +6,11 @@ from typing import Dict, Any, List, AsyncGenerator, Optional
 from datetime import datetime, timedelta
 import json
 import asyncio
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain.tools import tool
@@ -56,11 +61,14 @@ def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
         Dict containing fundamentals analysis with score, details, and key metrics
     """
     try:
+        logger.info(f"🔧 TOOL CALL: warren_buffett_fundamentals_analysis for ticker: {ticker}")
         ticker = clean_ticker(ticker)
         end_date = datetime.now().strftime("%Y-%m-%d")
         
         metrics = get_financial_metrics(ticker, end_date, period="annual", limit=5)
         result = analyze_fundamentals(metrics)
+        
+        logger.info(f"✅ TOOL RESULT: Fundamentals analysis for {ticker} completed with score: {result.get('score', 'N/A')}")
         
         return {
             "ticker": ticker,
@@ -70,6 +78,7 @@ def warren_buffett_fundamentals_analysis(ticker: str) -> Dict[str, Any]:
         }
         
     except Exception as e:
+        logger.error(f"❌ TOOL ERROR: warren_buffett_fundamentals_analysis failed for {ticker}: {str(e)}")
         return {
             "ticker": clean_ticker(ticker) if ticker else "UNKNOWN",
             "analysis_type": "warren_buffett_fundamentals",
@@ -407,21 +416,14 @@ class WarrenBuffettChatAgent:
         if self.llm is None:
             raise ValueError(f"Failed to initialize model: {model_name} with provider: {model_provider}")
         
-        # Import the existing tools
-        from app.backend.services.warren_buffett_chat_agent import (
-            warren_buffett_fundamentals_analysis,
-            warren_buffett_moat_analysis,
-            warren_buffett_consistency_analysis,
-            warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
-        )
-        
+        # Use the tools defined in this module
         self.tools = [
             warren_buffett_fundamentals_analysis,
             warren_buffett_moat_analysis,
             warren_buffett_consistency_analysis,
             warren_buffett_management_analysis,
-            warren_buffett_intrinsic_value_analysis
+            warren_buffett_intrinsic_value_analysis,
+            warren_buffett_owner_earnings_analysis
         ]
         
         # Create prompt (reuse existing one)
@@ -502,11 +504,20 @@ Thought: {agent_scratchpad}"""
             Dict containing analysis results and Buffett-style response
         """
         try:
+            logger.info(f"🎯 ANALYZE REQUEST: Received query: '{query}'")
+            logger.info(f"📋 CHAT HISTORY: {len(chat_history or [])} previous messages")
+            
             # Execute the agent
+            logger.info(f"🚀 AGENT EXECUTION: Starting Warren Buffett agent analysis...")
             result = await self.executor.ainvoke({
                 "input": query,
                 "chat_history": chat_history or []
             })
+            
+            logger.info(f"✅ AGENT COMPLETE: Analysis finished successfully")
+            logger.info(f"📝 RESPONSE LENGTH: {len(result.get('output', ''))}")
+            logger.info(f"🔍 INTERMEDIATE STEPS: {len(result.get('intermediate_steps', []))}")
+            logger.info(f"📄 RESPONSE PREVIEW: {result.get('output', '')[:100]}...")
             
             return {
                 "response": result["output"],
@@ -517,6 +528,8 @@ Thought: {agent_scratchpad}"""
             }
             
         except Exception as e:
+            logger.error(f"❌ ANALYZE ERROR: {str(e)}")
+            logger.exception("Full error traceback:")
             return {
                 "response": f"I apologize, but I encountered an error while analyzing your question: {str(e)}",
                 "error": str(e),

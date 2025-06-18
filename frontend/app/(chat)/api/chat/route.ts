@@ -48,12 +48,12 @@ function getStreamContext() {
         waitUntil: after,
       });
     } catch (error: any) {
-      if (error.message.includes('REDIS_URL')) {
+      if (error.message.includes('REDIS_URL') || error.code === 'ERR_INVALID_URL' || error.message.includes('Invalid URL')) {
         console.log(
-          ' > Resumable streams are disabled due to missing REDIS_URL',
+          ' > Resumable streams are disabled due to missing or invalid REDIS_URL',
         );
       } else {
-        console.error(error);
+        console.error('Resumable stream context error:', error);
       }
     }
   }

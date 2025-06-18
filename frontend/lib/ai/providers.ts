@@ -11,6 +11,7 @@ import {
   reasoningModel,
   titleModel,
 } from './models.test';
+import { openai } from '@ai-sdk/openai';
 
 export const myProvider = isTestEnvironment
   ? customProvider({
@@ -28,7 +29,7 @@ export const myProvider = isTestEnvironment
           model: xai('grok-3-mini-beta'),
           middleware: extractReasoningMiddleware({ tagName: 'think' }),
         }),
-        'title-model': xai('grok-2-1212'),
+        'title-model': openai('gpt-4o-mini'),
         'artifact-model': xai('grok-2-1212'),
       },
       imageModels: {

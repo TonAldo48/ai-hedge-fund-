@@ -8,6 +8,7 @@ from typing import List, Optional, Dict, Any
 import logging
 import json
 import asyncio
+from datetime import datetime
 
 from app.backend.services.warren_buffett_chat_agent import process_warren_buffett_query
 from app.backend.middleware.auth import verify_api_key
@@ -32,7 +33,14 @@ async def analyze_warren_buffett(
     Analyze stocks using Warren Buffett's investment philosophy.
     """
     try:
+        logger.info(f"🎯 ROUTE: /analyze received query: '{query}'")
+        logger.info(f"🔐 API_KEY: Authentication successful")
+        
         result = await process_warren_buffett_query(query)
+        
+        logger.info(f"✅ ROUTE: Analysis completed successfully")
+        logger.info(f"📝 ROUTE: Response length: {len(result.get('response', ''))}")
+        
         return ChatResponse(
             response=result["response"],
             success=result["success"],
@@ -40,6 +48,7 @@ async def analyze_warren_buffett(
             agent="warren_buffett"
         )
     except Exception as e:
+        logger.error(f"❌ ROUTE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/analyze-streaming")
@@ -57,10 +66,15 @@ async def analyze_warren_buffett_streaming(
     - Final response
     """
     try:
+        logger.info(f"🎯 STREAMING ROUTE: /analyze-streaming received query: '{request.query}'")
+        logger.info(f"📋 STREAMING: Chat history length: {len(request.chat_history)}")
+        logger.info(f"🔐 STREAMING: Authentication successful")
+        
         from app.backend.services.warren_buffett_chat_agent import get_warren_buffett_agent
         
         async def event_stream():
             """Generate Server-Sent Events for streaming analysis."""
+            logger.info(f"🚀 STREAMING: Starting event stream generation...")
             agent = get_warren_buffett_agent()
             
             # Convert chat history to simple list if needed
@@ -72,15 +86,25 @@ async def analyze_warren_buffett_streaming(
                     "timestamp": msg.timestamp
                 })
             
+            logger.info(f"📜 STREAMING: Converted chat history: {len(chat_history)} messages")
+            
             try:
+                event_count = 0
                 async for event_json in agent.analyze_streaming(request.query, chat_history):
+                    event_count += 1
+                    logger.info(f"📡 STREAMING EVENT {event_count}: {event_json[:100]}...")
+                    
                     # Format as Server-Sent Event
                     yield f"data: {event_json}\n\n"
                     
                     # Small delay to prevent overwhelming the client
                     await asyncio.sleep(0.1)
+                
+                logger.info(f"✅ STREAMING: Generated {event_count} events successfully")
                     
             except Exception as e:
+                logger.error(f"❌ STREAMING ERROR: {str(e)}")
+                logger.exception("Full streaming error traceback:")
                 # Send error event
                 error_event = {
                     "type": "error",
@@ -89,7 +113,7 @@ async def analyze_warren_buffett_streaming(
                         "message": "Analysis failed",
                         "success": False
                     },
-                    "timestamp": "2024-01-01T00:00:00Z"  # Will be replaced with actual time
+                    "timestamp": datetime.now().isoformat()
                 }
                 yield f"data: {json.dumps(error_event)}\n\n"
             
@@ -97,9 +121,10 @@ async def analyze_warren_buffett_streaming(
             end_event = {
                 "type": "stream_end",
                 "data": {"message": "Stream completed"},
-                "timestamp": "2024-01-01T00:00:00Z"
+                "timestamp": datetime.now().isoformat()
             }
             yield f"data: {json.dumps(end_event)}\n\n"
+            logger.info(f"🏁 STREAMING: Stream completed")
         
         return StreamingResponse(
             event_stream(),
