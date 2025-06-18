@@ -91,7 +91,10 @@ export async function createChat({
   title: string;
   userId: string;
   visibility?: 'private' | 'public';
-  agentType?: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
+  agentType?: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst' |
+    'michael-burry' | 'bill-ackman' | 'cathie-wood' | 'phil-fisher' | 'stanley-druckenmiller' |
+    'aswath-damodaran' | 'fundamentals-analyst' | 'sentiment-analyst' | 'valuation-analyst' |
+    'hedge-fund' | 'portfolio-manager';
 }) {
   const createdAt = new Date().toISOString();
 
@@ -116,7 +119,10 @@ export async function saveChat({
   userId: string;
   title: string;
   visibility?: 'private' | 'public';
-  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
+  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst' |
+    'michael-burry' | 'bill-ackman' | 'cathie-wood' | 'phil-fisher' | 'stanley-druckenmiller' |
+    'aswath-damodaran' | 'fundamentals-analyst' | 'sentiment-analyst' | 'valuation-analyst' |
+    'hedge-fund' | 'portfolio-manager';
 }) {
   try {
     return await db.insert(chat).values({
@@ -270,7 +276,10 @@ export async function getMessagesByChatIdAndAgentType({
   agentType 
 }: { 
   id: string;
-  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst';
+  agentType: 'general' | 'warren-buffett' | 'peter-lynch' | 'charlie-munger' | 'ben-graham' | 'technical-analyst' |
+    'michael-burry' | 'bill-ackman' | 'cathie-wood' | 'phil-fisher' | 'stanley-druckenmiller' |
+    'aswath-damodaran' | 'fundamentals-analyst' | 'sentiment-analyst' | 'valuation-analyst' |
+    'hedge-fund' | 'portfolio-manager';
 }) {
   try {
     return await db

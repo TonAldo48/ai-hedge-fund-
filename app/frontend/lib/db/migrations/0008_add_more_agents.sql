@@ -1,0 +1,12 @@
+-- Add more agent types to the Chat table
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'michael-burry';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'bill-ackman';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'cathie-wood';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'phil-fisher';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'stanley-druckenmiller';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'aswath-damodaran';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'fundamentals-analyst';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'sentiment-analyst';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'valuation-analyst';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'hedge-fund';
+ALTER TYPE "public"."Chat_agentType" ADD VALUE IF NOT EXISTS 'portfolio-manager'; 

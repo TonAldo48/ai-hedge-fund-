@@ -1,4 +1,4 @@
-import { Chat } from '@/components/chat';
+import { AgentChat } from '@/components/agent-chat';
 import type { Session } from 'next-auth';
 import { auth } from '../../../../(auth)/auth';
 import { generateUUID } from '@/lib/utils';
@@ -11,10 +11,10 @@ export default async function CharlieMungerChatPage() {
   const initialMessages: any[] = [];
 
   return (
-    <Chat
+    <AgentChat
       id={id}
+      agentType="charlie-munger"
       initialMessages={initialMessages}
-      initialChatModel="gpt-4o"
       initialVisibilityType="private"
       isReadonly={false}
       session={session}

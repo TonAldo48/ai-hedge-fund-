@@ -30,7 +30,10 @@ export const chat = pgTable('Chat', {
     .notNull()
     .default('private'),
   agentType: varchar('agentType', { 
-    enum: ['general', 'warren-buffett', 'peter-lynch', 'charlie-munger', 'ben-graham', 'technical-analyst'] 
+    enum: ['general', 'warren-buffett', 'peter-lynch', 'charlie-munger', 'ben-graham', 'technical-analyst',
+           'michael-burry', 'bill-ackman', 'cathie-wood', 'phil-fisher', 'stanley-druckenmiller',
+           'aswath-damodaran', 'fundamentals-analyst', 'sentiment-analyst', 'valuation-analyst',
+           'hedge-fund', 'portfolio-manager'] 
   })
     .notNull()
     .default('general'),
