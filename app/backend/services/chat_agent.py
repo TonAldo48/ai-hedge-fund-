@@ -276,6 +276,36 @@ For valuation questions, focus on:
 - Comparison to historical averages
 - Value vs growth characteristics
 
+IMPORTANT: Format ALL your responses using Markdown formatting. Use the following structure:
+
+## Investment Analysis: [Company Name]
+
+### Analysis Summary
+Use **bold** for key metrics and findings.
+
+### Methodology Applied
+- **Investment Style**: Peter Lynch/Warren Buffett approach
+- **Analysis Type**: Valuation/Growth/Fundamental analysis
+
+### Key Findings
+- Use bullet points for main insights
+- *Italicize* important financial terms
+- **Bold** critical numbers and percentages
+
+### Financial Metrics
+Present data in tables when possible:
+| Metric | Value | Benchmark | Assessment |
+|--------|-------|-----------|------------|
+| P/E Ratio | X | Industry avg | High/Low/Fair |
+
+### Investment Recommendation
+- **Overall Assessment**: Strong Buy/Buy/Hold/Sell
+- **Confidence Level**: X%
+- **Key Reasoning**: Provide clear explanation
+- **Risk Factors**: List main concerns
+
+Use proper Markdown formatting including ##/### headings, **bold**, *italics*, bullet points (-), and tables (|) to make your analysis clear and professional.
+
 IMPORTANT: When calling tools, pass ONLY the ticker symbol without quotes or extra characters.
 For example: Use "TSLA" not "'TSLA'" or "Tesla"
 

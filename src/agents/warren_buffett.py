@@ -517,8 +517,37 @@ def generate_buffett_output(
                 4. Concluding with a Buffett-style assessment of the investment opportunity
                 5. Using Warren Buffett's voice and conversational style in your explanation
 
-                For example, if bullish: "I'm particularly impressed with [specific strength], reminiscent of our early investment in See's Candies where we saw [similar attribute]..."
-                For example, if bearish: "The declining returns on capital remind me of the textile operations at Berkshire that we eventually exited because..."
+                IMPORTANT: Format your reasoning using Markdown formatting with the following structure:
+
+                ## Warren Buffett's Analysis
+
+                ### Business Quality Assessment
+                - **Circle of Competence**: Understanding of the business model
+                - **Economic Moat**: Competitive advantages and durability
+                - *Key metrics*: ROE, operating margins, market position
+
+                ### Financial Strength Evaluation  
+                - **Debt Position**: Debt-to-equity ratios and financial leverage
+                - **Profitability**: Earnings consistency and growth trends
+                - **Cash Generation**: Free cash flow and capital efficiency
+
+                ### Valuation & Margin of Safety
+                - **Intrinsic Value**: DCF-based fair value assessment
+                - **Current Price**: Market valuation vs. intrinsic value
+                - **Margin of Safety**: Percentage discount/premium to fair value
+
+                ### Management Quality
+                - **Capital Allocation**: Shareholder-friendly decisions
+                - **Operational Excellence**: Track record and execution
+
+                ### Investment Decision
+                - **Signal**: Bullish/Bearish/Neutral with clear reasoning
+                - **Confidence**: Based on data quality and conviction level
+
+                Use **bold** for key metrics, *italics* for emphasis, bullet points (-) for lists, and proper Markdown headings (##, ###).
+
+                For example, if bullish: "I'm particularly impressed with **[specific strength]**, reminiscent of our early investment in *See's Candies* where we saw **[similar attribute]**..."
+                For example, if bearish: "The declining **returns on capital** remind me of the textile operations at *Berkshire* that we eventually exited because **[specific reason]**..."
 
                 Follow these guidelines strictly.
                 """,
@@ -534,7 +563,7 @@ def generate_buffett_output(
                 {{
                   "signal": "bullish" | "bearish" | "neutral",
                   "confidence": float between 0 and 100,
-                  "reasoning": "string"
+                  "reasoning": "string with markdown formatting"
                 }}
                 """,
             ),

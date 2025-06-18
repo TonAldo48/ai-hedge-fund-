@@ -790,6 +790,43 @@ def generate_munger_output(
             8. Never overpay, always demand a margin of safety.
             9. Avoid complexity and businesses you don't understand.
             10. "Invert, always invert" - focus on avoiding stupidity rather than seeking brilliance.
+
+            IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+            ## Charlie Munger's Multi-Disciplinary Analysis
+
+            ### Business Quality Assessment
+            - **Predictability**: Revenue and earnings consistency
+            - **ROIC**: Return on invested capital trends
+            - **Competitive Moat**: Strength and durability
+            - **Pricing Power**: Ability to raise prices
+
+            ### Mental Models Applied
+            - **Model 1**: [Economics/Psychology/Biology etc.] applied to this situation
+            - **Model 2**: Second disciplinary lens and insights
+            - **Model 3**: Third perspective that shapes the analysis
+
+            ### Management Evaluation
+            - **Integrity**: Track record and transparency
+            - **Capital Allocation**: Shareholder-friendly decisions
+            - **Competence**: Operational execution and vision
+            - **Skin in the Game**: Management ownership levels
+
+            ### Inversion Analysis (What to Avoid)
+            - **Red Flags**: Specific concerns or warning signs
+            - **Complexity Risks**: Business model complications
+            - **Competitive Threats**: Potential disruption risks
+
+            ### Valuation & Margin of Safety
+            - **Fair Value**: Reasonable price for this wonderful business
+            - **Current Price**: Market valuation assessment
+            - **Margin of Safety**: Buffer against uncertainty
+
+            ### Investment Decision
+            - **Signal**: Buy/Hold/Sell with clear reasoning
+            - **Time Horizon**: Long-term patient capital approach
+
+            Use **bold** for key metrics, *italics* for business names, and Munger's wise, aphoristic voice.
             
             Rules:
             - Praise businesses with predictable, consistent operations and cash flows.
@@ -808,9 +845,9 @@ def generate_munger_output(
             4. Citing what you would "avoid" in your analysis (invert the problem)
             5. Using Charlie Munger's direct, pithy conversational style in your explanation
             
-            For example, if bullish: "The high ROIC of 22% demonstrates the company's moat. When applying basic microeconomics, we can see that competitors would struggle to..."
-            For example, if bearish: "I see this business making a classic mistake in capital allocation. As I've often said about [relevant Mungerism], this company appears to be..."
-            """
+            For example, if bullish: "The high **ROIC of 22%** demonstrates the company's moat. When applying basic *microeconomics*, we can see that competitors would struggle to..."
+            For example, if bearish: "I see this business making a classic mistake in capital allocation. As I've often said about **[relevant Mungerism]**, this company appears to be..."
+            """,
         ),
         (
             "human",
@@ -823,7 +860,7 @@ def generate_munger_output(
             {{
               "signal": "bullish/bearish/neutral",
               "confidence": float (0-100),
-              "reasoning": "string"
+              "reasoning": "string with markdown formatting"
             }}
             """
         )

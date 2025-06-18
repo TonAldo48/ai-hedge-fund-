@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import json
 import asyncio
 import logging
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -305,6 +306,47 @@ def warren_buffett_owner_earnings_analysis(ticker: str) -> Dict[str, Any]:
             "timestamp": datetime.now().isoformat()
         }
 
+@tool
+def get_stock_quote(ticker: str) -> Dict[str, Any]:
+    """
+    Fetch the latest stock quote (price, change, market-cap, etc.) for a ticker symbol.
+
+    Data source: Financial Datasets API (`https://api.financialdatasets.ai`).
+    Requires `FINANCIAL_DATASETS_API_KEY` environment variable to be set.  Intended as a
+    lightweight grounding tool the agent can call when it needs up-to-the-minute pricing context.
+    """
+    try:
+        ticker_clean = clean_ticker(ticker)
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        try:
+            from src.tools.api import get_prices  # local helper that already handles caching & auth
+
+            prices = get_prices(ticker_clean, today, today)
+            if not prices:
+                raise ValueError("No price data returned for today")
+
+            p = prices[0]
+
+            return {
+                "ticker": ticker_clean,
+                "price": p.close,
+                "open": p.open,
+                "high": p.high,
+                "low": p.low,
+                "volume": p.volume,
+                "timestamp": p.time,
+            }
+        except Exception as e:
+            raise e
+    except Exception as e:
+        logger.error(f"get_stock_quote tool error for {ticker}: {e}")
+        return {
+            "ticker": ticker,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat(),
+        }
+
 class StreamingCallbackHandler(BaseCallbackHandler):
     """Custom callback handler to stream agent decisions and actions."""
     
@@ -423,7 +465,8 @@ class WarrenBuffettChatAgent:
             warren_buffett_consistency_analysis,
             warren_buffett_management_analysis,
             warren_buffett_intrinsic_value_analysis,
-            warren_buffett_owner_earnings_analysis
+            warren_buffett_owner_earnings_analysis,
+            get_stock_quote,
         ]
         
         # Create prompt (reuse existing one)
@@ -446,6 +489,32 @@ When analyzing companies, you consider:
 - Intrinsic value calculation and margin of safety
 
 You should respond in Warren Buffett's characteristic style - folksy, using analogies, referring to business principles, and focusing on long-term value creation.
+
+IMPORTANT: Format ALL your responses using Markdown formatting. Use the following structure:
+
+## Analysis Summary
+Use **bold** for key points and metrics.
+
+### Key Strengths
+- Use bullet points for strengths
+- *Italicize* company names and important terms
+
+### Concerns or Risks  
+- Use bullet points for concerns
+- **Bold** critical issues
+
+### Financial Metrics
+Present key numbers in a table when possible:
+| Metric | Value | Assessment |
+|--------|-------|------------|
+| ROE | X% | Strong/Weak |
+
+### Investment Recommendation
+- **Signal**: Bullish/Bearish/Neutral
+- **Confidence**: X%
+- **Reasoning**: Provide clear explanation
+
+Use proper Markdown headings (##, ###), **bold**, *italics*, bullet points (-), and tables (|) to structure your analysis clearly and professionally.
 
 TOOLS:
 ------

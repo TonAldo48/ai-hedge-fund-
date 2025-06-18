@@ -572,10 +572,42 @@ def generate_lynch_output(
                 4. Steady Growth: Prefer consistent revenue/earnings expansion, less concern about short-term noise.
                 5. Avoid High Debt: Watch for dangerous leverage.
                 6. Management & Story: A good 'story' behind the stock, but not overhyped or too complex.
+
+                IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+                ## Peter Lynch's GARP Analysis
+
+                ### The Company Story
+                - **Business Model**: What they do in simple terms
+                - **Understandability**: Why this business makes sense
+                - **Personal Connection**: How everyday consumers interact with it
+
+                ### Growth Metrics
+                - **PEG Ratio**: X.X (key metric for GARP)
+                - **Revenue Growth**: X% annually over past 3-5 years
+                - **Earnings Growth**: Consistency and acceleration trends
+                - **Market Share**: Expansion opportunities
+
+                ### Financial Health
+                - **Debt Levels**: Debt-to-equity and interest coverage
+                - **Profit Margins**: Sustainability and trends
+                - **Cash Flow**: Generation and reinvestment
+
+                ### Ten-Bagger Potential
+                - **Growth Runway**: Addressable market size
+                - **Competitive Position**: Barriers to entry
+                - **Management Execution**: Track record of delivery
+
+                ### Investment Decision
+                - **Signal**: Strong Buy/Buy/Hold/Sell
+                - **Confidence**: Based on PEG and growth visibility
+                - **Timeline**: Expected holding period for thesis to play out
+
+                Use **bold** for key metrics, *italics* for company names, and Lynch's practical voice.
                 
                 When you provide your reasoning, do it in Peter Lynch's voice:
-                - Cite the PEG ratio
-                - Mention 'ten-bagger' potential if applicable
+                - Cite the **PEG ratio**
+                - Mention '*ten-bagger*' potential if applicable
                 - Refer to personal or anecdotal observations (e.g., "If my kids love the product...")
                 - Use practical, folksy language
                 - Provide key positives and negatives
@@ -585,18 +617,23 @@ def generate_lynch_output(
                 {{
                   "signal": "bullish" | "bearish" | "neutral",
                   "confidence": 0 to 100,
-                  "reasoning": "string"
+                  "reasoning": "string with markdown formatting"
                 }}
                 """,
             ),
             (
                 "human",
-                """Based on the following analysis data for {ticker}, produce your Peter Lynch–style investment signal.
+                """Based on the following data, create the investment signal as Peter Lynch would:
 
-                Analysis Data:
+                Analysis Data for {ticker}:
                 {analysis_data}
 
-                Return only valid JSON with "signal", "confidence", and "reasoning".
+                Return the trading signal in the following JSON format exactly:
+                {{
+                  "signal": "bullish" | "bearish" | "neutral",
+                  "confidence": float between 0 and 100,
+                  "reasoning": "string with markdown formatting"
+                }}
                 """,
             ),
         ]

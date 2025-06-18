@@ -450,20 +450,49 @@ def _generate_burry_output(
                 - Look for hard catalysts such as insider buying, buybacks, or asset sales
                 - Communicate in Burry's terse, data‑driven style
 
+                IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+                ## Michael Burry's Deep Value Analysis
+
+                ### Key Valuation Metrics
+                - **FCF Yield**: X% (vs benchmark Y%)
+                - **EV/EBIT**: X.X (vs industry average)
+                - **Book Value**: Trading at X% of book value
+
+                ### Balance Sheet Strength
+                - **Debt-to-Equity**: X.X ratio
+                - **Current Ratio**: X.X
+                - **Cash Position**: Analysis of liquidity
+
+                ### Contrarian Opportunities
+                - **Market Sentiment**: Why the market is wrong
+                - **Hard Catalysts**: Specific events that could unlock value
+                - **Insider Activity**: Recent buying/selling patterns
+
+                ### Risk Assessment
+                - **Downside Protection**: What limits losses
+                - **Financial Leverage**: Debt concerns or lack thereof
+
+                ### Investment Decision
+                - **Signal**: Strong Buy/Buy/Hold/Sell with reasoning
+                - **Price Target**: Based on valuation metrics
+
+                Use **bold** for key metrics, *italics* for emphasis, and be terse like Burry.
+
                 When providing your reasoning, be thorough and specific by:
                 1. Start with the key metric(s) that drove your decision
-                2. Cite concrete numbers (e.g. "FCF yield 14.7%", "EV/EBIT 5.3")
+                2. Cite concrete numbers (e.g. "FCF yield **14.7%**", "EV/EBIT **5.3**")
                 3. Highlight risk factors and why they are acceptable (or not)
                 4. Mention relevant insider activity or contrarian opportunities
                 5. Use Burry's direct, number-focused communication style with minimal words
                 
-                For example, if bullish: "FCF yield 12.8%. EV/EBIT 6.2. Debt-to-equity 0.4. Net insider buying 25k shares. Market missing value due to overreaction to recent litigation. Strong buy."
-                For example, if bearish: "FCF yield only 2.1%. Debt-to-equity concerning at 2.3. Management diluting shareholders. Pass."
+                For example, if bullish: "**FCF yield 12.8%**. **EV/EBIT 6.2**. Debt-to-equity **0.4**. Net insider buying **25k shares**. Market missing value due to overreaction to recent litigation. **Strong buy**."
+                For example, if bearish: "FCF yield only **2.1%**. Debt-to-equity concerning at **2.3**. Management diluting shareholders. **Pass**."
                 """,
             ),
             (
                 "human",
-                """Based on the following data, create the investment signal as Michael Burry would:
+                """Based on the following data, create a Michael Burry-style trading signal:
 
                 Analysis Data for {ticker}:
                 {analysis_data}
@@ -472,7 +501,7 @@ def _generate_burry_output(
                 {{
                   "signal": "bullish" | "bearish" | "neutral",
                   "confidence": float between 0 and 100,
-                  "reasoning": "string"
+                  "reasoning": "string with markdown formatting"
                 }}
                 """,
             ),
