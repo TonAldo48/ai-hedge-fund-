@@ -51,7 +51,7 @@ class BacktestRequest(BaseModel):
     selected_agents: List[str]
     start_date: str
     end_date: str
-    model_name: str = "gpt-4o-mini"
+    model_name: str = "gpt-4o"
     model_provider: ModelProvider = ModelProvider.OPENAI
     initial_capital: float = 100000.0
     margin_requirement: float = 0.0

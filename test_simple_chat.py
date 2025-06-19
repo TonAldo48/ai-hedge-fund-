@@ -26,7 +26,7 @@ async def test_tesla_lynch_query():
         
         # Try different models in order of preference
         model_configs = [
-            ("gpt-4o-mini-2024-07-18", "openai"),
+            ("gpt-4o-mini", "openai"),
             ("gpt-4", "openai"), 
             ("claude-3-5-sonnet-20241022", "anthropic"),
             ("deepseek-chat", "deepseek")
