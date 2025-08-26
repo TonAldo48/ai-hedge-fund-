@@ -44,7 +44,7 @@ def test_backtest_streaming():
         "selected_agents": ["michael_burry", "cathie_wood"],
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
-        "model_name": "gpt-4o-mini",
+        "model_name": "gpt-4o-mini-mini",
         "model_provider": "OpenAI",
         "initial_capital": 100000,
         "margin_requirement": 0.0,
@@ -212,7 +212,7 @@ def test_backtest_sync():
         "selected_agents": ["warren_buffett"],
         "start_date": start_date.strftime("%Y-%m-%d"),
         "end_date": end_date.strftime("%Y-%m-%d"),
-        "model_name": "gpt-4o-mini",
+        "model_name": "gpt-4o-mini-mini",
         "model_provider": "OpenAI",
         "initial_capital": 50000,
         "margin_requirement": 0.0

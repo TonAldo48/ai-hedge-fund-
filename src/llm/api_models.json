@@ -71,7 +71,7 @@
   },
   {
     "display_name": "[openai] gpt 4o",
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "provider": "OpenAI"
   },
   {

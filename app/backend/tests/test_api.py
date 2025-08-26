@@ -71,7 +71,7 @@ def test_api():
     payload = {
         "tickers": ["AAPL", "MSFT"],  # Just 2 tickers for quick test
         "selected_agents": ["technical_analyst", "risk_analyst"],  # Just 2 agents
-        "model_name": "gpt-4o-mini",  # Use smaller model for testing
+        "model_name": "gpt-4o-mini-mini",  # Use smaller model for testing
         "model_provider": "OPENAI",
         "initial_cash": 50000,
         "margin_requirement": 0,

@@ -92,7 +92,7 @@ curl https://aeeroooo-production.up.railway.app/hedge-fund/models
   "models": [
     {
       "display_name": "[openai] gpt 4o",
-      "model_name": "gpt-4o",
+      "model_name": "gpt-4o-mini",
       "provider": "OpenAI"
     },
     {
@@ -122,7 +122,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000
   }'
@@ -171,7 +171,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
     "tickers": ["AAPL"],
     "start_date": "2025-02-27",
     "end_date": "2025-05-28",
-    "model": "OpenAI:gpt-4o",
+    "model": "OpenAI:gpt-4o-mini",
     "selected_agents": ["technical_analyst"]
   }
 }
@@ -186,7 +186,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL", "MSFT", "GOOGL"],
     "selected_agents": ["warren_buffett", "technical_analyst", "peter_lynch"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 100000,
     "start_date": "2024-01-01",
@@ -245,7 +245,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "show_reasoning": true
@@ -289,7 +289,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "start_date": "2025-05-18",
@@ -360,7 +360,7 @@ start_date = end_date - timedelta(days=10)
 payload = {
     "tickers": ["AAPL", "MSFT", "NVDA"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "start_date": start_date.strftime("%Y-%m-%d"),
@@ -426,7 +426,7 @@ Event 59: complete
 |-----------|------|----------|---------|-------------|
 | `tickers` | array[string] | Yes | - | Stock symbols (e.g., ["AAPL", "MSFT"]) |
 | `selected_agents` | array[string] | Yes | - | Agent IDs from `/agents` endpoint |
-| `model_name` | string | No | "gpt-4o" | LLM model name |
+| `model_name` | string | No | "gpt-4o-mini" | LLM model name |
 | `model_provider` | string | No | "OpenAI" | Model provider (OpenAI, Anthropic, etc.) |
 | `initial_cash` | float | No | 100000.0 | Starting cash amount |
 | `margin_requirement` | float | No | 0.0 | Margin requirement |
@@ -527,7 +527,7 @@ Import the pre-configured collection:
     "technical_analyst",
     "michael_burry"
   ],
-  "model_name": "gpt-4o",
+  "model_name": "gpt-4o-mini",
   "model_provider": "OpenAI",
   "initial_cash": 200000,
   "margin_requirement": 10000
@@ -554,13 +554,13 @@ Import the pre-configured collection:
 ### For Faster Responses:
 - Use 1-2 tickers max
 - Select 1-2 agents
-- Use `gpt-4o-mini` or `claude-3-5-haiku-latest`
+- Use `gpt-4o-mini-mini` or `claude-3-5-haiku-latest`
 - Shorter date ranges (7-30 days)
 
 ### For Comprehensive Analysis:
 - Use 3-5 tickers
 - Mix agent types (value + growth + technical)
-- Use `gpt-4o` or `claude-sonnet-4`
+- Use `gpt-4o-mini` or `claude-sonnet-4`
 - Longer historical periods (3-12 months)
 
 ---

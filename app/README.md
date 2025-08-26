@@ -100,7 +100,7 @@ cp .env.example .env
 
 3. Edit the .env file to add your API keys:
 ```bash
-# For running LLMs hosted by openai (gpt-4o, gpt-4o-mini, etc.)
+# For running LLMs hosted by openai (gpt-4o-mini, gpt-4o-mini-mini, etc.)
 OPENAI_API_KEY=your-openai-api-key
 
 # For running LLMs hosted by groq (deepseek, llama3, etc.)

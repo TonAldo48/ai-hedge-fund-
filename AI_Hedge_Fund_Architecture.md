@@ -81,8 +81,8 @@
 │                                                                                         │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
 │  │ OPENAI          │  │ GROQ            │  │ ANTHROPIC       │  │ OLLAMA (LOCAL)  │     │
-│  │ • GPT-4o        │  │ • Deepseek      │  │ • Claude        │  │ • Llama3        │     │
-│  │ • GPT-4o-mini   │  │ • Llama3        │  │ • Sonnet        │  │ • Mistral       │     │
+│  │ • gpt-4o-mini        │  │ • Deepseek      │  │ • Claude        │  │ • Llama3        │     │
+│  │ • gpt-4o-mini-mini   │  │ • Llama3        │  │ • Sonnet        │  │ • Mistral       │     │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘  │ • Gemma         │     │
 │                                                                 └─────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────────────────────┘
@@ -127,7 +127,7 @@
    ├── Tickers: AAPL,MSFT,NVDA
    ├── Date Range: 2024-01-01 to 2024-12-31
    ├── Analyst Selection: Interactive checkbox
-   └── Model Selection: GPT-4o, Groq, etc.
+   └── Model Selection: gpt-4o-mini, Groq, etc.
 
 2. DATA GATHERING
    ├── Price History → Financial Datasets API

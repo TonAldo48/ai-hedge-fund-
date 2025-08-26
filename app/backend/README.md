@@ -124,7 +124,7 @@ curl -H "Authorization: Bearer your-api-key" ...
 
 ## 📊 Supported Models
 
-- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4o-mini
+- **OpenAI**: gpt-4o-mini, gpt-4o-mini-mini, gpt-4o-mini-mini
 - **Anthropic**: claude-3-5-sonnet, claude-3-haiku
 - **DeepSeek**: deepseek-chat, deepseek-reasoner
 

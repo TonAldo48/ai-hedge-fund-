@@ -59,7 +59,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\", \"GOOGL\"],\n  \"selected_agents\": [\"technical_analyst\", \"fundamental_analyst\", \"sentiment_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 100000,\n  \"margin_requirement\": 0\n}"
+          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\", \"GOOGL\"],\n  \"selected_agents\": [\"technical_analyst\", \"fundamental_analyst\", \"sentiment_analyst\"],\n  \"model_name\": \"gpt-4o-mini\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 100000,\n  \"margin_requirement\": 0\n}"
         },
         "url": {
           "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync",
@@ -82,7 +82,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\"],\n  \"selected_agents\": [\"technical_analyst\", \"risk_analyst\"],\n  \"model_name\": \"gpt-4o\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 50000,\n  \"margin_requirement\": 0,\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-03-31\"\n}"
+          "raw": "{\n  \"tickers\": [\"AAPL\", \"MSFT\"],\n  \"selected_agents\": [\"technical_analyst\", \"risk_analyst\"],\n  \"model_name\": \"gpt-4o-mini\",\n  \"model_provider\": \"OPENAI\",\n  \"initial_cash\": 50000,\n  \"margin_requirement\": 0,\n  \"start_date\": \"2024-01-01\",\n  \"end_date\": \"2024-03-31\"\n}"
         },
         "url": {
           "raw": "https://aeeroooo-production.up.railway.app/hedge-fund/run",

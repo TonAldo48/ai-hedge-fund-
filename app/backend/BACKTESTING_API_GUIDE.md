@@ -31,7 +31,7 @@ Start a new backtest session that can be streamed in real-time.
   "selected_agents": ["michael_burry", "cathie_wood"],
   "start_date": "2025-05-15",
   "end_date": "2025-05-29", 
-  "model_name": "gpt-4o-mini",
+  "model_name": "gpt-4o-mini-mini",
   "model_provider": "OpenAI",
   "initial_capital": 100000,
   "margin_requirement": 0.0,
@@ -229,7 +229,7 @@ Cancel a running backtest.
 
 ## 📊 Supported Models
 
-- **OpenAI**: `gpt-4o`, `gpt-4o-mini`, `gpt-4o-mini`
+- **OpenAI**: `gpt-4o-mini`, `gpt-4o-mini-mini`, `gpt-4o-mini-mini`
 - **Anthropic**: `claude-3-5-sonnet-20241022`, `claude-3-haiku-20240307`
 - **DeepSeek**: `deepseek-chat`, `deepseek-reasoner`
 
@@ -251,7 +251,7 @@ const streamBacktest = async (backtestId) => {
       selected_agents: ['michael_burry', 'cathie_wood'],
       start_date: '2025-05-15',
       end_date: '2025-05-29',
-      model_name: 'gpt-4o-mini',
+      model_name: 'gpt-4o-mini-mini',
       model_provider: 'OpenAI',
       initial_capital: 100000
     })

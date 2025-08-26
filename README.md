@@ -80,7 +80,7 @@ cp .env.example .env
 
 4. Set your API keys:
 ```bash
-# For running LLMs hosted by openai (gpt-4o, gpt-4o-mini, etc.)
+# For running LLMs hosted by openai (gpt-4o-mini, gpt-4o-mini-mini, etc.)
 # Get your OpenAI API key from https://platform.openai.com/
 OPENAI_API_KEY=your-openai-api-key
 
@@ -270,7 +270,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini", 
+    "model_name": "gpt-4o-mini-mini", 
     "model_provider": "OpenAI",
     "show_reasoning": true
   }'
@@ -284,7 +284,7 @@ curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -d '{
     "tickers": ["AAPL", "MSFT"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI"
   }' \
   --no-buffer
@@ -332,7 +332,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI"
   }'
 ```

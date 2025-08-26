@@ -32,7 +32,7 @@ class HedgeFundRequest(BaseModel):
     selected_agents: List[str]
     end_date: Optional[str] = Field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
     start_date: Optional[str] = None
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-4o-mini"
     model_provider: ModelProvider = ModelProvider.OPENAI
     initial_cash: float = 100000.0
     margin_requirement: float = 0.0
@@ -51,7 +51,7 @@ class BacktestRequest(BaseModel):
     selected_agents: List[str]
     start_date: str
     end_date: str
-    model_name: str = "gpt-4o"
+    model_name: str = "gpt-4o-mini"
     model_provider: ModelProvider = ModelProvider.OPENAI
     initial_capital: float = 100000.0
     margin_requirement: float = 0.0
