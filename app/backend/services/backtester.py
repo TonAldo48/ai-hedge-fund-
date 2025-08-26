@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Callable, Any
 import pandas as pd
 from dataclasses import dataclass, field
+from langsmith import traceable
 
 from src.backtester import Backtester
 from src.main import run_hedge_fund
@@ -60,9 +61,31 @@ class BacktestManager:
         """Clean up a completed backtest session"""
         if backtest_id in self.sessions:
             session = self.sessions[backtest_id]
+            
+            # Cancel the task if it's still running
             if session.task and not session.task.done():
                 session.task.cancel()
+                
+            # Mark as not running
+            session.is_running = False
+            
+            # Clear the event queue to prevent memory leaks
+            while not session.event_queue.empty():
+                try:
+                    session.event_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+                    
+            # Remove from sessions dict
             del self.sessions[backtest_id]
+            print(f"Cleaned up backtest session: {backtest_id}")
+    
+    def cleanup_all_sessions(self):
+        """Clean up all sessions - useful for server restart"""
+        session_ids = list(self.sessions.keys())
+        for session_id in session_ids:
+            self.cleanup_session(session_id)
+        print(f"Cleaned up {len(session_ids)} backtest sessions")
 
 
 # Global instance
@@ -87,6 +110,10 @@ class StreamingBacktester(Backtester):
         """Emit an event to the stream synchronously"""
         self.event_queue.put_nowait(event)
     
+    @traceable(
+        name="AI Hedge Fund Backtest Streaming",
+        metadata_key="backtest_streaming_metadata"
+    )
     def run_backtest_streaming(self):
         """Run backtest with streaming events"""
         # Pre-fetch all data at the start
@@ -272,11 +299,30 @@ class StreamingBacktester(Backtester):
         return performance_metrics
 
 
+@traceable(
+    name="AI Hedge Fund Backtest",
+    metadata_key="backtest_metadata"
+)
 async def run_backtest_async(session: BacktestSession):
     """Run backtest asynchronously with streaming events"""
     try:
         session.result.status = "running"
         session.is_running = True
+        
+        # Add metadata for tracing
+        from langsmith import get_current_run_tree
+        if get_current_run_tree():
+            get_current_run_tree().extra = {
+                "backtest_id": session.id,
+                "tickers": session.request.tickers,
+                "selected_agents": session.request.selected_agents,
+                "model_name": session.request.model_name,
+                "model_provider": session.request.model_provider.value,
+                "date_range": f"{session.request.start_date} to {session.request.end_date}",
+                "initial_capital": session.request.initial_capital,
+                "margin_requirement": session.request.margin_requirement,
+                "backtest_type": "streaming"
+            }
         
         # Create streaming backtester
         backtester = StreamingBacktester(

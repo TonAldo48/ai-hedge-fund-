@@ -7,6 +7,10 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
+from datetime import datetime
 
 class CharlieMungerSignal(BaseModel):
     signal: Literal["bullish", "bearish", "neutral"]
@@ -14,6 +18,11 @@ class CharlieMungerSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="charlie_munger_agent",
+    tags=["hedge_fund", "value_investing", "charlie_munger"],
+    metadata={"agent_type": "investment_analyst", "style": "value_investing"}
+)
 def charlie_munger_agent(state: AgentState):
     """
     Analyzes stocks using Charlie Munger's investing principles and mental models.
@@ -23,8 +32,40 @@ def charlie_munger_agent(state: AgentState):
     end_date = data["end_date"]
     tickers = data["tickers"]
     
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["charlie_munger"]
+        )
+    
+    # Create session metadata for tracing
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="charlie_munger",
+        tickers=tickers,
+        model_name=state["metadata"]["model_name"],
+        model_provider=state["metadata"]["model_provider"],
+        metadata={
+            "investment_style": "value_investing",
+            "key_metrics": ["moat_strength", "management_quality", "predictability"]
+        }
+    )
     analysis_data = {}
     munger_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("charlie_munger")
     
     for ticker in tickers:
         progress.update_status("charlie_munger_agent", ticker, "Fetching financial metrics")
@@ -89,13 +130,12 @@ def charlie_munger_agent(state: AgentState):
         progress.update_status("charlie_munger_agent", ticker, "Calculating Munger-style valuation")
         valuation_analysis = calculate_munger_valuation(financial_line_items, market_cap)
         
-        # Combine partial scores with Munger's weighting preferences
-        # Munger weights quality and predictability higher than current valuation
+        # Combine partial scores with weights from the registry
         total_score = (
-            moat_analysis["score"] * 0.35 +
-            management_analysis["score"] * 0.25 +
-            predictability_analysis["score"] * 0.25 +
-            valuation_analysis["score"] * 0.15
+            moat_analysis["score"] * current_weights["moat_strength"] +
+            management_analysis["score"] * current_weights["management_quality"] +
+            predictability_analysis["score"] * current_weights["predictability"] +
+            valuation_analysis["score"] * current_weights["valuation"]
         )
         
         max_possible_score = 10  # Scale to 0-10
@@ -117,7 +157,8 @@ def charlie_munger_agent(state: AgentState):
             "predictability_analysis": predictability_analysis,
             "valuation_analysis": valuation_analysis,
             # Include some qualitative assessment from news
-            "news_sentiment": analyze_news_sentiment(company_news) if company_news else "No news data available"
+            "news_sentiment": analyze_news_sentiment(company_news) if company_news else "No news data available",
+            "weights_used": current_weights  # Store weights used
         }
         
         progress.update_status("charlie_munger_agent", ticker, "Generating Charlie Munger analysis")
@@ -133,6 +174,40 @@ def charlie_munger_agent(state: AgentState):
             "confidence": munger_output.confidence,
             "reasoning": munger_output.reasoning
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="charlie_munger",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=munger_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="charlie_munger",
+            ticker=ticker,
+            function_name="analyze_moat_strength",
+            score=moat_analysis["score"],
+            max_score=10,
+            details=moat_analysis["details"],
+            function_data=moat_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="charlie_munger",
+            ticker=ticker,
+            function_name="analyze_management_quality",
+            score=management_analysis["score"],
+            max_score=10,
+            details=management_analysis["details"],
+            function_data=management_analysis
+        )
         
         progress.update_status("charlie_munger_agent", ticker, "Done", analysis=munger_output.reasoning)
     
@@ -157,6 +232,11 @@ def charlie_munger_agent(state: AgentState):
     }
 
 
+@traceable(
+    name="analyze_moat_strength",
+    tags=["charlie_munger", "moat_analysis", "competitive_advantage"],
+    metadata={"analysis_type": "moat_strength", "focus": "competitive_advantage"}
+)
 def analyze_moat_strength(metrics: list, financial_line_items: list) -> dict:
     """
     Analyze the business's competitive advantage using Munger's approach:
@@ -263,6 +343,11 @@ def analyze_moat_strength(metrics: list, financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="analyze_management_quality",
+    tags=["charlie_munger", "management_quality", "capital_allocation"],
+    metadata={"analysis_type": "management_quality", "focus": "capital_allocation"}
+)
 def analyze_management_quality(financial_line_items: list, insider_trades: list) -> dict:
     """
     Evaluate management quality using Munger's criteria:
@@ -423,6 +508,11 @@ def analyze_management_quality(financial_line_items: list, insider_trades: list)
     }
 
 
+@traceable(
+    name="analyze_predictability",
+    tags=["charlie_munger", "predictability", "business_consistency"],
+    metadata={"analysis_type": "predictability", "focus": "business_consistency"}
+)
 def analyze_predictability(financial_line_items: list) -> dict:
     """
     Assess the predictability of the business - Munger strongly prefers businesses
@@ -541,6 +631,11 @@ def analyze_predictability(financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="calculate_munger_valuation",
+    tags=["charlie_munger", "valuation", "intrinsic_value"],
+    metadata={"analysis_type": "valuation", "focus": "intrinsic_value"}
+)
 def calculate_munger_valuation(financial_line_items: list, market_cap: float) -> dict:
     """
     Calculate intrinsic value using Munger's approach:
@@ -649,6 +744,11 @@ def calculate_munger_valuation(financial_line_items: list, market_cap: float) ->
     }
 
 
+@traceable(
+    name="analyze_news_sentiment",
+    tags=["charlie_munger", "news_analysis", "sentiment"],
+    metadata={"analysis_type": "news_sentiment", "focus": "qualitative_analysis"}
+)
 def analyze_news_sentiment(news_items: list) -> str:
     """
     Simple qualitative analysis of recent news.
@@ -661,6 +761,11 @@ def analyze_news_sentiment(news_items: list) -> str:
     return f"Qualitative review of {len(news_items)} recent news items would be needed"
 
 
+@traceable(
+    name="generate_munger_output",
+    tags=["charlie_munger", "llm_reasoning", "investment_decision"],
+    metadata={"analysis_type": "final_decision", "method": "llm_synthesis"}
+)
 def generate_munger_output(
     ticker: str,
     analysis_data: dict[str, any],
@@ -685,6 +790,43 @@ def generate_munger_output(
             8. Never overpay, always demand a margin of safety.
             9. Avoid complexity and businesses you don't understand.
             10. "Invert, always invert" - focus on avoiding stupidity rather than seeking brilliance.
+
+            IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+            ## Charlie Munger's Multi-Disciplinary Analysis
+
+            ### Business Quality Assessment
+            - **Predictability**: Revenue and earnings consistency
+            - **ROIC**: Return on invested capital trends
+            - **Competitive Moat**: Strength and durability
+            - **Pricing Power**: Ability to raise prices
+
+            ### Mental Models Applied
+            - **Model 1**: [Economics/Psychology/Biology etc.] applied to this situation
+            - **Model 2**: Second disciplinary lens and insights
+            - **Model 3**: Third perspective that shapes the analysis
+
+            ### Management Evaluation
+            - **Integrity**: Track record and transparency
+            - **Capital Allocation**: Shareholder-friendly decisions
+            - **Competence**: Operational execution and vision
+            - **Skin in the Game**: Management ownership levels
+
+            ### Inversion Analysis (What to Avoid)
+            - **Red Flags**: Specific concerns or warning signs
+            - **Complexity Risks**: Business model complications
+            - **Competitive Threats**: Potential disruption risks
+
+            ### Valuation & Margin of Safety
+            - **Fair Value**: Reasonable price for this wonderful business
+            - **Current Price**: Market valuation assessment
+            - **Margin of Safety**: Buffer against uncertainty
+
+            ### Investment Decision
+            - **Signal**: Buy/Hold/Sell with clear reasoning
+            - **Time Horizon**: Long-term patient capital approach
+
+            Use **bold** for key metrics, *italics* for business names, and Munger's wise, aphoristic voice.
             
             Rules:
             - Praise businesses with predictable, consistent operations and cash flows.
@@ -703,9 +845,9 @@ def generate_munger_output(
             4. Citing what you would "avoid" in your analysis (invert the problem)
             5. Using Charlie Munger's direct, pithy conversational style in your explanation
             
-            For example, if bullish: "The high ROIC of 22% demonstrates the company's moat. When applying basic microeconomics, we can see that competitors would struggle to..."
-            For example, if bearish: "I see this business making a classic mistake in capital allocation. As I've often said about [relevant Mungerism], this company appears to be..."
-            """
+            For example, if bullish: "The high **ROIC of 22%** demonstrates the company's moat. When applying basic *microeconomics*, we can see that competitors would struggle to..."
+            For example, if bearish: "I see this business making a classic mistake in capital allocation. As I've often said about **[relevant Mungerism]**, this company appears to be..."
+            """,
         ),
         (
             "human",
@@ -718,7 +860,7 @@ def generate_munger_output(
             {{
               "signal": "bullish/bearish/neutral",
               "confidence": float (0-100),
-              "reasoning": "string"
+              "reasoning": "string with markdown formatting"
             }}
             """
         )

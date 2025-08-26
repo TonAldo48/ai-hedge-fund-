@@ -20,8 +20,8 @@ The API will be available at `http://localhost:8000`
 
 ### 2. Access API Documentation
 
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: https://aeeroooo-production.up.railway.app/docs
+- **ReDoc**: https://aeeroooo-production.up.railway.app/redoc
 
 ## API Endpoints
 
@@ -78,8 +78,8 @@ GET /hedge-fund/models
 {
   "models": [
     {
-      "display_name": "OpenAI GPT-4o",
-      "model_name": "gpt-4o",
+      "display_name": "OpenAI gpt-4o-mini",
+      "model_name": "gpt-4o-mini",
       "provider": "OPENAI"
     },
     {
@@ -103,7 +103,7 @@ Content-Type: application/json
 {
   "tickers": ["AAPL", "MSFT", "GOOGL"],
   "selected_agents": ["technical_analyst", "fundamental_analyst", "sentiment_analyst"],
-  "model_name": "gpt-4o",
+  "model_name": "gpt-4o-mini",
   "model_provider": "OPENAI",
   "initial_cash": 100000,
   "margin_requirement": 0,
@@ -144,7 +144,7 @@ Content-Type: application/json
     "tickers": ["AAPL", "MSFT", "GOOGL"],
     "start_date": "2024-01-01",
     "end_date": "2024-03-31",
-    "model": "OPENAI:gpt-4o",
+    "model": "OPENAI:gpt-4o-mini",
     "selected_agents": ["technical_analyst", "fundamental_analyst", "sentiment_analyst"]
   }
 }
@@ -161,7 +161,7 @@ Content-Type: application/json
 {
   "tickers": ["AAPL", "MSFT"],
   "selected_agents": ["technical_analyst", "risk_analyst"],
-  "model_name": "gpt-4o",
+  "model_name": "gpt-4o-mini",
   "model_provider": "OPENAI",
   "initial_cash": 50000,
   "margin_requirement": 0
@@ -211,7 +211,7 @@ Set these in your Postman environment:
 |-------|------|----------|---------|-------------|
 | `tickers` | array[string] | Yes | - | Stock symbols to analyze (e.g., ["AAPL", "MSFT"]) |
 | `selected_agents` | array[string] | Yes | - | Agent IDs to use for analysis |
-| `model_name` | string | No | "gpt-4o" | LLM model name |
+| `model_name` | string | No | "gpt-4o-mini" | LLM model name |
 | `model_provider` | string | No | "OPENAI" | Model provider (OPENAI, ANTHROPIC, etc.) |
 | `initial_cash` | float | No | 100000.0 | Starting cash amount |
 | `margin_requirement` | float | No | 0.0 | Margin requirement for trading |
@@ -287,7 +287,7 @@ models = requests.get(f"{BASE_URL}/hedge-fund/models").json()
 payload = {
     "tickers": ["AAPL", "MSFT", "GOOGL"],
     "selected_agents": agent_ids,
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OPENAI",
     "initial_cash": 100000
 }

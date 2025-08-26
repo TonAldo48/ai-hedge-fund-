@@ -8,6 +8,10 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class BillAckmanSignal(BaseModel):
@@ -16,6 +20,11 @@ class BillAckmanSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="bill_ackman_agent",
+    tags=["hedge_fund", "activist_investing", "bill_ackman", "value_investing"],
+    metadata={"agent_type": "investment_analyst", "style": "activist_value_investing"}
+)
 def bill_ackman_agent(state: AgentState):
     """
     Analyzes stocks using Bill Ackman's investing principles and LLM reasoning.
@@ -26,8 +35,43 @@ def bill_ackman_agent(state: AgentState):
     end_date = data["end_date"]
     tickers = data["tickers"]
     
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["bill_ackman"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="bill_ackman",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "activist_value_investing",
+            "key_metrics": ["quality", "balance_sheet", "activism_potential", "valuation"]
+        }
+    )
+    
     analysis_data = {}
     ackman_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("bill_ackman")
     
     for ticker in tickers:
         progress.update_status("bill_ackman_agent", ticker, "Fetching financial metrics")
@@ -69,31 +113,45 @@ def bill_ackman_agent(state: AgentState):
         progress.update_status("bill_ackman_agent", ticker, "Calculating intrinsic value & margin of safety")
         valuation_analysis = analyze_valuation(financial_line_items, market_cap)
         
-        # Combine partial scores or signals
+        # Combine partial scores using weights from registry
         total_score = (
-            quality_analysis["score"]
-            + balance_sheet_analysis["score"]
-            + activism_analysis["score"]
-            + valuation_analysis["score"]
+            quality_analysis["score"] * current_weights["quality"] +
+            balance_sheet_analysis["score"] * current_weights["balance_sheet"] +
+            activism_analysis["score"] * current_weights["activism_potential"] +
+            valuation_analysis["score"] * current_weights["valuation"]
         )
-        max_possible_score = 20  # Adjust weighting as desired (5 from each sub-analysis, for instance)
+        
+        # Normalize scores to 0-10 scale
+        max_component_scores = {"quality": 7, "balance_sheet": 5, "activism_potential": 2, "valuation": 3}
+        normalized_total = sum(
+            (score / max_component_scores[component]) * 10 * current_weights[component]
+            for component, score in [
+                ("quality", quality_analysis["score"]),
+                ("balance_sheet", balance_sheet_analysis["score"]),
+                ("activism_potential", activism_analysis["score"]),
+                ("valuation", valuation_analysis["score"])
+            ]
+        )
+        
+        max_possible_score = 10
         
         # Generate a simple buy/hold/sell (bullish/neutral/bearish) signal
-        if total_score >= 0.7 * max_possible_score:
+        if normalized_total >= 7.0:
             signal = "bullish"
-        elif total_score <= 0.3 * max_possible_score:
+        elif normalized_total <= 4.0:
             signal = "bearish"
         else:
             signal = "neutral"
         
         analysis_data[ticker] = {
             "signal": signal,
-            "score": total_score,
+            "score": normalized_total,
             "max_score": max_possible_score,
             "quality_analysis": quality_analysis,
             "balance_sheet_analysis": balance_sheet_analysis,
             "activism_analysis": activism_analysis,
-            "valuation_analysis": valuation_analysis
+            "valuation_analysis": valuation_analysis,
+            "weights_used": current_weights  # Store weights used
         }
         
         progress.update_status("bill_ackman_agent", ticker, "Generating Bill Ackman analysis")
@@ -109,6 +167,40 @@ def bill_ackman_agent(state: AgentState):
             "confidence": ackman_output.confidence,
             "reasoning": ackman_output.reasoning
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="bill_ackman",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=normalized_total,
+            signal=signal,
+            confidence=ackman_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="bill_ackman",
+            ticker=ticker,
+            function_name="analyze_business_quality",
+            score=quality_analysis["score"],
+            max_score=max_component_scores["quality"],
+            details=quality_analysis["details"],
+            function_data=quality_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="bill_ackman",
+            ticker=ticker,
+            function_name="analyze_financial_discipline",
+            score=balance_sheet_analysis["score"],
+            max_score=max_component_scores["balance_sheet"],
+            details=balance_sheet_analysis["details"],
+            function_data=balance_sheet_analysis
+        )
         
         progress.update_status("bill_ackman_agent", ticker, "Done", analysis=ackman_output.reasoning)
     
@@ -133,6 +225,11 @@ def bill_ackman_agent(state: AgentState):
     }
 
 
+@traceable(
+    name="analyze_business_quality",
+    tags=["bill_ackman", "quality_analysis", "competitive_moats"],
+    metadata={"analysis_type": "business_quality"}
+)
 def analyze_business_quality(metrics: list, financial_line_items: list) -> dict:
     """
     Analyze whether the company has a high-quality business with stable or growing cash flows,
@@ -211,6 +308,11 @@ def analyze_business_quality(metrics: list, financial_line_items: list) -> dict:
     }
 
 
+@traceable(
+    name="analyze_financial_discipline",
+    tags=["bill_ackman", "financial_discipline", "capital_allocation"],
+    metadata={"analysis_type": "financial_discipline"}
+)
 def analyze_financial_discipline(metrics: list, financial_line_items: list) -> dict:
     """
     Evaluate the company's balance sheet over multiple periods:
@@ -286,6 +388,11 @@ def analyze_financial_discipline(metrics: list, financial_line_items: list) -> d
     }
 
 
+@traceable(
+    name="analyze_activism_potential",
+    tags=["bill_ackman", "activism_analysis", "value_creation"],
+    metadata={"analysis_type": "activism_potential"}
+)
 def analyze_activism_potential(financial_line_items: list) -> dict:
     """
     Bill Ackman often engages in activism if a company has a decent brand or moat
@@ -331,6 +438,11 @@ def analyze_activism_potential(financial_line_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_valuation",
+    tags=["bill_ackman", "valuation_analysis", "margin_of_safety"],
+    metadata={"analysis_type": "valuation"}
+)
 def analyze_valuation(financial_line_items: list, market_cap: float) -> dict:
     """
     Ackman invests in companies trading at a discount to intrinsic value.
@@ -395,6 +507,11 @@ def analyze_valuation(financial_line_items: list, market_cap: float) -> dict:
     }
 
 
+@traceable(
+    name="generate_ackman_output",
+    tags=["bill_ackman", "llm_generation", "activist_investing"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_ackman_output(
     ticker: str,
     analysis_data: dict[str, any],

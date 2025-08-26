@@ -20,6 +20,8 @@ wheels/
 .installed.cfg
 *.egg
 
+app/frontend/node_modules/
+
 # Virtual Environment
 venv/
 ENV/
@@ -51,3 +53,4 @@ Thumbs.db
 
 # Frontend
 node_modules
+.vercel

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 import asyncio
+from datetime import datetime
 
 from app.backend.models.schemas import ErrorResponse, HedgeFundRequest
 from app.backend.models.events import StartEvent, ProgressUpdateEvent, ErrorEvent, CompleteEvent
@@ -10,6 +11,7 @@ from app.backend.middleware.auth import verify_api_key, verify_api_key_optional
 from src.utils.progress import progress
 from src.utils.analysts import ANALYST_ORDER
 from src.llm.models import LLM_ORDER, ModelProvider
+from src.utils.weight_manager import weight_tracker
 
 router = APIRouter(prefix="/hedge-fund")
 
@@ -55,6 +57,19 @@ async def run_hedge_fund_sync(
     **Authentication Required**: This endpoint requires a valid API key.
     """
     try:
+        # Generate session ID for weight tracking
+        session_id = f"api_sync_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+        
+        # Create weight tracking session
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=request.tickers,
+            start_date=request.get_start_date(),
+            end_date=request.end_date,
+            selected_agents=request.selected_agents
+        )
+        
         # Create the portfolio
         portfolio = create_portfolio(request.initial_cash, request.margin_requirement, request.tickers)
 
@@ -67,7 +82,7 @@ async def run_hedge_fund_sync(
         if hasattr(model_provider, "value"):
             model_provider = model_provider.value
 
-        # Run the graph
+        # Run the graph with session ID
         result = await run_graph_async(
             graph=graph,
             portfolio=portfolio,
@@ -77,16 +92,21 @@ async def run_hedge_fund_sync(
             model_name=request.model_name,
             model_provider=model_provider,
             show_reasoning=request.show_reasoning,
+            session_id=session_id,  # Pass session ID
         )
 
         if not result or not result.get("messages"):
             raise HTTPException(status_code=500, detail="Failed to generate hedge fund decisions")
 
-        # Return the final result
+        # Mark session as complete
+        weight_tracker.complete_session(session_id)
+
+        # Return the final result with session ID
         return {
             "decisions": parse_hedge_fund_response(result.get("messages", [])[-1].content),
             "analyst_signals": result.get("data", {}).get("analyst_signals", {}),
             "metadata": {
+                "session_id": session_id,  # Include session ID in response
                 "tickers": request.tickers,
                 "start_date": request.get_start_date(),
                 "end_date": request.end_date,
@@ -121,6 +141,19 @@ async def run_hedge_fund(
     **Authentication Required**: This endpoint requires a valid API key.
     """
     try:
+        # Generate session ID for weight tracking
+        session_id = f"api_stream_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+        
+        # Create weight tracking session
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=request.tickers,
+            start_date=request.get_start_date(),
+            end_date=request.end_date,
+            selected_agents=request.selected_agents
+        )
+        
         # Create the portfolio
         portfolio = create_portfolio(request.initial_cash, request.margin_requirement, request.tickers)
 
@@ -161,6 +194,7 @@ async def run_hedge_fund(
                         model_name=request.model_name,
                         model_provider=model_provider,
                         show_reasoning=request.show_reasoning,
+                        session_id=session_id,  # Pass session ID
                     )
                 )
                 # Send initial message
@@ -183,11 +217,15 @@ async def run_hedge_fund(
                     yield ErrorEvent(message="Failed to generate hedge fund decisions").to_sse()
                     return
 
-                # Send the final result
+                # Mark session as complete
+                weight_tracker.complete_session(session_id)
+
+                # Send the final result with session ID
                 final_data = CompleteEvent(
                     data={
                         "decisions": parse_hedge_fund_response(result.get("messages", [])[-1].content),
                         "analyst_signals": result.get("data", {}).get("analyst_signals", {}),
+                        "session_id": session_id,  # Include session ID
                         "authenticated": True
                     }
                 )

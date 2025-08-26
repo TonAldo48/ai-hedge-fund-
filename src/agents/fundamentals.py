@@ -2,6 +2,8 @@ from langchain_core.messages import HumanMessage
 from src.graph.state import AgentState, show_agent_reasoning
 from src.utils.progress import progress
 import json
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 from src.tools.api import get_financial_metrics
 
@@ -12,9 +14,29 @@ def fundamentals_analyst_agent(state: AgentState):
     data = state["data"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["fundamentals_analyst"]
+        )
 
     # Initialize fundamental analysis for each ticker
     fundamental_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("fundamentals_analyst")
 
     for ticker in tickers:
         progress.update_status("fundamentals_analyst_agent", ticker, "Fetching financial metrics")
@@ -117,26 +139,82 @@ def fundamentals_analyst_agent(state: AgentState):
         }
 
         progress.update_status("fundamentals_analyst_agent", ticker, "Calculating final signal")
-        # Determine overall signal
-        bullish_signals = signals.count("bullish")
-        bearish_signals = signals.count("bearish")
-
-        if bullish_signals > bearish_signals:
+        # Calculate weighted scores for each category
+        category_scores = {
+            "profitability": 1.0 if signals[0] == "bullish" else 0.0 if signals[0] == "bearish" else 0.5,
+            "growth": 1.0 if signals[1] == "bullish" else 0.0 if signals[1] == "bearish" else 0.5,
+            "financial_health": 1.0 if signals[2] == "bullish" else 0.0 if signals[2] == "bearish" else 0.5,
+            "valuation": 1.0 if signals[3] == "bullish" else 0.0 if signals[3] == "bearish" else 0.5,
+        }
+        
+        # Apply weights from registry
+        weighted_score = sum(
+            category_scores[category] * current_weights[category]
+            for category in category_scores
+        )
+        
+        # Convert weighted score to signal
+        if weighted_score > 0.6:
             overall_signal = "bullish"
-        elif bearish_signals > bullish_signals:
+        elif weighted_score < 0.4:
             overall_signal = "bearish"
         else:
             overall_signal = "neutral"
 
-        # Calculate confidence level
-        total_signals = len(signals)
-        confidence = round(max(bullish_signals, bearish_signals) / total_signals, 2) * 100
+        # Calculate confidence level based on strength of weighted score
+        confidence = round(abs(weighted_score - 0.5) * 200, 2)  # Scale 0-0.5 distance to 0-100
+        
+        # Calculate total score for tracking
+        total_score = weighted_score * 10  # Convert 0-1 to 0-10 scale
 
         fundamental_analysis[ticker] = {
             "signal": overall_signal,
             "confidence": confidence,
             "reasoning": reasoning,
+            "weights_used": current_weights  # Store weights used
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="fundamentals_analyst",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=overall_signal,
+            confidence=confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="fundamentals_analyst",
+            ticker=ticker,
+            function_name="analyze_profitability",
+            score=profitability_score / 3 * 10,  # Normalize to 0-10
+            max_score=10,
+            details=reasoning["profitability_signal"]["details"],
+            function_data={
+                "signal": signals[0],
+                "score": profitability_score,
+                "metrics": reasoning["profitability_signal"]
+            }
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="fundamentals_analyst",
+            ticker=ticker,
+            function_name="analyze_growth",
+            score=growth_score / 3 * 10,  # Normalize to 0-10
+            max_score=10,
+            details=reasoning["growth_signal"]["details"],
+            function_data={
+                "signal": signals[1],
+                "score": growth_score,
+                "metrics": reasoning["growth_signal"]
+            }
+        )
 
         progress.update_status("fundamentals_analyst_agent", ticker, "Done", analysis=json.dumps(reasoning, indent=4))
 

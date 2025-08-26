@@ -14,6 +14,10 @@ import json
 from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class PeterLynchSignal(BaseModel):
@@ -25,6 +29,11 @@ class PeterLynchSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="peter_lynch_agent",
+    tags=["hedge_fund", "growth_investing", "peter_lynch", "GARP"],
+    metadata={"agent_type": "investment_analyst", "style": "growth_at_reasonable_price"}
+)
 def peter_lynch_agent(state: AgentState):
     """
     Analyzes stocks using Peter Lynch's investing principles:
@@ -44,9 +53,44 @@ def peter_lynch_agent(state: AgentState):
     start_date = data["start_date"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            selected_agents=["peter_lynch"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="peter_lynch",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "growth_at_reasonable_price",
+            "key_metrics": ["PEG_ratio", "revenue_growth", "EPS_growth", "sentiment", "insider_activity"]
+        }
+    )
 
     analysis_data = {}
     lynch_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("peter_lynch")
 
     for ticker in tickers:
         progress.update_status("peter_lynch_agent", ticker, "Fetching financial metrics")
@@ -103,15 +147,13 @@ def peter_lynch_agent(state: AgentState):
         progress.update_status("peter_lynch_agent", ticker, "Analyzing insider activity")
         insider_activity = analyze_insider_activity(insider_trades)
 
-        # Combine partial scores with weights typical for Peter Lynch:
-        #   30% Growth, 25% Valuation, 20% Fundamentals,
-        #   15% Sentiment, 10% Insider Activity = 100%
+        # Calculate total score using current weights
         total_score = (
-            growth_analysis["score"] * 0.30
-            + valuation_analysis["score"] * 0.25
-            + fundamentals_analysis["score"] * 0.20
-            + sentiment_analysis["score"] * 0.15
-            + insider_activity["score"] * 0.10
+            growth_analysis["score"] * current_weights["growth"]
+            + valuation_analysis["score"] * current_weights["valuation"]
+            + fundamentals_analysis["score"] * current_weights["fundamentals"]
+            + sentiment_analysis["score"] * current_weights["sentiment"]
+            + insider_activity["score"] * current_weights["insider_activity"]
         )
 
         max_possible_score = 10.0
@@ -133,6 +175,7 @@ def peter_lynch_agent(state: AgentState):
             "fundamentals_analysis": fundamentals_analysis,
             "sentiment_analysis": sentiment_analysis,
             "insider_activity": insider_activity,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("peter_lynch_agent", ticker, "Generating Peter Lynch analysis")
@@ -148,6 +191,46 @@ def peter_lynch_agent(state: AgentState):
             "confidence": lynch_output.confidence,
             "reasoning": lynch_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=lynch_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            function_name="analyze_lynch_growth",
+            score=growth_analysis["score"],
+            max_score=10,
+            details=growth_analysis["details"],
+            function_data={
+                "score": growth_analysis["score"],
+                "details": growth_analysis["details"]
+            }
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="peter_lynch",
+            ticker=ticker,
+            function_name="analyze_lynch_valuation",
+            score=valuation_analysis["score"],
+            max_score=10,
+            details=valuation_analysis["details"],
+            function_data={
+                "score": valuation_analysis["score"],
+                "details": valuation_analysis["details"]
+            }
+        )
 
         progress.update_status("peter_lynch_agent", ticker, "Done", analysis=lynch_output.reasoning)
 
@@ -165,6 +248,11 @@ def peter_lynch_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_lynch_growth",
+    tags=["peter_lynch", "growth_analysis", "GARP"],
+    metadata={"analysis_type": "growth_metrics"}
+)
 def analyze_lynch_growth(financial_line_items: list) -> dict:
     """
     Evaluate growth based on revenue and EPS trends:
@@ -230,6 +318,11 @@ def analyze_lynch_growth(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_lynch_fundamentals",
+    tags=["peter_lynch", "fundamentals_analysis", "GARP"],
+    metadata={"analysis_type": "fundamentals"}
+)
 def analyze_lynch_fundamentals(financial_line_items: list) -> dict:
     """
     Evaluate basic fundamentals:
@@ -293,6 +386,11 @@ def analyze_lynch_fundamentals(financial_line_items: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_lynch_valuation",
+    tags=["peter_lynch", "valuation_analysis", "PEG_ratio"],
+    metadata={"analysis_type": "valuation"}
+)
 def analyze_lynch_valuation(financial_line_items: list, market_cap: float | None) -> dict:
     """
     Peter Lynch's approach to 'Growth at a Reasonable Price' (GARP):
@@ -362,6 +460,11 @@ def analyze_lynch_valuation(financial_line_items: list, market_cap: float | None
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_sentiment",
+    tags=["peter_lynch", "sentiment_analysis", "news_analysis"],
+    metadata={"analysis_type": "sentiment"}
+)
 def analyze_sentiment(news_items: list) -> dict:
     """
     Basic news sentiment check. Negative headlines weigh on the final score.
@@ -393,6 +496,11 @@ def analyze_sentiment(news_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["peter_lynch", "insider_trading", "market_signals"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def analyze_insider_activity(insider_trades: list) -> dict:
     """
     Simple insider-trade analysis:
@@ -438,6 +546,11 @@ def analyze_insider_activity(insider_trades: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="generate_lynch_output",
+    tags=["peter_lynch", "llm_generation", "GARP"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_lynch_output(
     ticker: str,
     analysis_data: dict[str, any],
@@ -459,10 +572,42 @@ def generate_lynch_output(
                 4. Steady Growth: Prefer consistent revenue/earnings expansion, less concern about short-term noise.
                 5. Avoid High Debt: Watch for dangerous leverage.
                 6. Management & Story: A good 'story' behind the stock, but not overhyped or too complex.
+
+                IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+                ## Peter Lynch's GARP Analysis
+
+                ### The Company Story
+                - **Business Model**: What they do in simple terms
+                - **Understandability**: Why this business makes sense
+                - **Personal Connection**: How everyday consumers interact with it
+
+                ### Growth Metrics
+                - **PEG Ratio**: X.X (key metric for GARP)
+                - **Revenue Growth**: X% annually over past 3-5 years
+                - **Earnings Growth**: Consistency and acceleration trends
+                - **Market Share**: Expansion opportunities
+
+                ### Financial Health
+                - **Debt Levels**: Debt-to-equity and interest coverage
+                - **Profit Margins**: Sustainability and trends
+                - **Cash Flow**: Generation and reinvestment
+
+                ### Ten-Bagger Potential
+                - **Growth Runway**: Addressable market size
+                - **Competitive Position**: Barriers to entry
+                - **Management Execution**: Track record of delivery
+
+                ### Investment Decision
+                - **Signal**: Strong Buy/Buy/Hold/Sell
+                - **Confidence**: Based on PEG and growth visibility
+                - **Timeline**: Expected holding period for thesis to play out
+
+                Use **bold** for key metrics, *italics* for company names, and Lynch's practical voice.
                 
                 When you provide your reasoning, do it in Peter Lynch's voice:
-                - Cite the PEG ratio
-                - Mention 'ten-bagger' potential if applicable
+                - Cite the **PEG ratio**
+                - Mention '*ten-bagger*' potential if applicable
                 - Refer to personal or anecdotal observations (e.g., "If my kids love the product...")
                 - Use practical, folksy language
                 - Provide key positives and negatives
@@ -472,18 +617,23 @@ def generate_lynch_output(
                 {{
                   "signal": "bullish" | "bearish" | "neutral",
                   "confidence": 0 to 100,
-                  "reasoning": "string"
+                  "reasoning": "string with markdown formatting"
                 }}
                 """,
             ),
             (
                 "human",
-                """Based on the following analysis data for {ticker}, produce your Peter Lynch–style investment signal.
+                """Based on the following data, create the investment signal as Peter Lynch would:
 
-                Analysis Data:
+                Analysis Data for {ticker}:
                 {analysis_data}
 
-                Return only valid JSON with "signal", "confidence", and "reasoning".
+                Return the trading signal in the following JSON format exactly:
+                {{
+                  "signal": "bullish" | "bearish" | "neutral",
+                  "confidence": float between 0 and 100,
+                  "reasoning": "string with markdown formatting"
+                }}
                 """,
             ),
         ]

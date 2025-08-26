@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from enum import Enum
 from pydantic import BaseModel
-from typing import Tuple, List
+from typing import Tuple, List, Union
 from pathlib import Path
 
 
@@ -104,7 +104,26 @@ def get_model_info(model_name: str, model_provider: str) -> LLMModel | None:
     return next((model for model in all_models if model.model_name == model_name and model.provider == model_provider), None)
 
 
-def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | ChatGroq | ChatOllama | None:
+def get_model(model_name: str, model_provider: Union[str, ModelProvider]) -> Union[ChatOpenAI, ChatAnthropic, ChatDeepSeek, ChatGoogleGenerativeAI, ChatGroq, ChatOllama, None]:
+    """Get model instance by name and provider. Provider can be string or ModelProvider enum."""
+    
+    # Convert string provider to enum if needed
+    if isinstance(model_provider, str):
+        try:
+            # Handle case-insensitive provider names
+            provider_mapping = {
+                "openai": "OpenAI",
+                "anthropic": "Anthropic", 
+                "groq": "Groq",
+                "deepseek": "DeepSeek",
+                "gemini": "Gemini",
+                "ollama": "Ollama"
+            }
+            normalized_provider = provider_mapping.get(model_provider.lower(), model_provider)
+            model_provider = ModelProvider(normalized_provider)
+        except ValueError:
+            print(f"❌ Unknown model provider: {model_provider}")
+            return None
     if model_provider == ModelProvider.GROQ:
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
@@ -117,9 +136,20 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("OPENAI_API_BASE")
         if not api_key:
-            # Print error to console
-            print(f"API Key Error: Please make sure OPENAI_API_KEY is set in your .env file.")
-            raise ValueError("OpenAI API key not found.  Please make sure OPENAI_API_KEY is set in your .env file.")
+            # Try to load from dotenv as fallback
+            try:
+                from dotenv import load_dotenv
+                load_dotenv()
+                api_key = os.getenv("OPENAI_API_KEY")
+            except ImportError:
+                pass
+            
+            if not api_key:
+                # Print error to console but don't raise exception - return None instead
+                print(f"API Key Error: Please make sure OPENAI_API_KEY is set in your .env file.")
+                print(f"Current working directory: {os.getcwd()}")
+                print(f"Looking for .env file...")
+                return None
         return ChatOpenAI(model=model_name, api_key=api_key, base_url=base_url)
     elif model_provider == ModelProvider.ANTHROPIC:
         api_key = os.getenv("ANTHROPIC_API_KEY")
@@ -148,3 +178,6 @@ def get_model(model_name: str, model_provider: ModelProvider) -> ChatOpenAI | Ch
             model=model_name,
             base_url=base_url,
         )
+    else:
+        print(f"❌ Unsupported model provider: {model_provider}")
+        return None

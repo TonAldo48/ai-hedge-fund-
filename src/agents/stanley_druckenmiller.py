@@ -15,6 +15,10 @@ from typing_extensions import Literal
 from src.utils.progress import progress
 from src.utils.llm import call_llm
 import statistics
+from datetime import datetime, timedelta
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 
 class StanleyDruckenmillerSignal(BaseModel):
@@ -23,6 +27,11 @@ class StanleyDruckenmillerSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="stanley_druckenmiller_agent",
+    tags=["hedge_fund", "macro_trading", "stanley_druckenmiller", "momentum"],
+    metadata={"agent_type": "investment_analyst", "style": "macro_momentum_trading"}
+)
 def stanley_druckenmiller_agent(state: AgentState):
     """
     Analyzes stocks using Stanley Druckenmiller's investing principles:
@@ -38,8 +47,43 @@ def stanley_druckenmiller_agent(state: AgentState):
     end_date = data["end_date"]
     tickers = data["tickers"]
 
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            selected_agents=["stanley_druckenmiller"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="stanley_druckenmiller",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "macro_momentum_trading",
+            "key_metrics": ["growth_momentum", "risk_reward", "valuation", "sentiment", "insider_activity"]
+        }
+    )
+
     analysis_data = {}
     druck_analysis = {}
+
+    # Get current weights for this agent
+    current_weights = get_current_weights("stanley_druckenmiller")
 
     for ticker in tickers:
         progress.update_status("stanley_druckenmiller_agent", ticker, "Fetching financial metrics")
@@ -101,15 +145,13 @@ def stanley_druckenmiller_agent(state: AgentState):
         progress.update_status("stanley_druckenmiller_agent", ticker, "Performing Druckenmiller-style valuation")
         valuation_analysis = analyze_druckenmiller_valuation(financial_line_items, market_cap)
 
-        # Combine partial scores with weights typical for Druckenmiller:
-        #   35% Growth/Momentum, 20% Risk/Reward, 20% Valuation,
-        #   15% Sentiment, 10% Insider Activity = 100%
+        # Calculate total score using current weights
         total_score = (
-            growth_momentum_analysis["score"] * 0.35
-            + risk_reward_analysis["score"] * 0.20
-            + valuation_analysis["score"] * 0.20
-            + sentiment_analysis["score"] * 0.15
-            + insider_activity["score"] * 0.10
+            growth_momentum_analysis["score"] * current_weights["growth_momentum"]
+            + risk_reward_analysis["score"] * current_weights["risk_reward"]
+            + valuation_analysis["score"] * current_weights["valuation"]
+            + sentiment_analysis["score"] * current_weights["sentiment"]
+            + insider_activity["score"] * current_weights["insider_activity"]
         )
 
         max_possible_score = 10
@@ -131,6 +173,7 @@ def stanley_druckenmiller_agent(state: AgentState):
             "insider_activity": insider_activity,
             "risk_reward_analysis": risk_reward_analysis,
             "valuation_analysis": valuation_analysis,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("stanley_druckenmiller_agent", ticker, "Generating Stanley Druckenmiller analysis")
@@ -146,6 +189,46 @@ def stanley_druckenmiller_agent(state: AgentState):
             "confidence": druck_output.confidence,
             "reasoning": druck_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="stanley_druckenmiller",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=druck_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="stanley_druckenmiller",
+            ticker=ticker,
+            function_name="analyze_growth_and_momentum",
+            score=growth_momentum_analysis["score"],
+            max_score=10,
+            details=growth_momentum_analysis["details"],
+            function_data={
+                "score": growth_momentum_analysis["score"],
+                "details": growth_momentum_analysis["details"]
+            }
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="stanley_druckenmiller",
+            ticker=ticker,
+            function_name="analyze_risk_reward",
+            score=risk_reward_analysis["score"],
+            max_score=10,
+            details=risk_reward_analysis["details"],
+            function_data={
+                "score": risk_reward_analysis["score"],
+                "details": risk_reward_analysis["details"]
+            }
+        )
 
         progress.update_status("stanley_druckenmiller_agent", ticker, "Done", analysis=druck_output.reasoning)
 
@@ -162,6 +245,11 @@ def stanley_druckenmiller_agent(state: AgentState):
     return {"messages": [message], "data": state["data"]}
 
 
+@traceable(
+    name="analyze_growth_and_momentum",
+    tags=["stanley_druckenmiller", "growth_analysis", "momentum"],
+    metadata={"analysis_type": "growth_momentum"}
+)
 def analyze_growth_and_momentum(financial_line_items: list, prices: list) -> dict:
     """
     Evaluate:
@@ -265,6 +353,11 @@ def analyze_growth_and_momentum(financial_line_items: list, prices: list) -> dic
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["stanley_druckenmiller", "insider_trading", "market_signals"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def analyze_insider_activity(insider_trades: list) -> dict:
     """
     Simple insider-trade analysis:
@@ -312,6 +405,11 @@ def analyze_insider_activity(insider_trades: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_sentiment",
+    tags=["stanley_druckenmiller", "sentiment_analysis", "news_analysis"],
+    metadata={"analysis_type": "sentiment"}
+)
 def analyze_sentiment(news_items: list) -> dict:
     """
     Basic news sentiment: negative keyword check vs. overall volume.
@@ -343,6 +441,11 @@ def analyze_sentiment(news_items: list) -> dict:
     return {"score": score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_risk_reward",
+    tags=["stanley_druckenmiller", "risk_analysis", "asymmetric_risk_reward"],
+    metadata={"analysis_type": "risk_reward"}
+)
 def analyze_risk_reward(financial_line_items: list, prices: list) -> dict:
     """
     Assesses risk via:
@@ -417,6 +520,11 @@ def analyze_risk_reward(financial_line_items: list, prices: list) -> dict:
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="analyze_druckenmiller_valuation",
+    tags=["stanley_druckenmiller", "valuation_analysis", "growth_valuation"],
+    metadata={"analysis_type": "druckenmiller_valuation"}
+)
 def analyze_druckenmiller_valuation(financial_line_items: list, market_cap: float | None) -> dict:
     """
     Druckenmiller is willing to pay up for growth, but still checks:
@@ -521,6 +629,11 @@ def analyze_druckenmiller_valuation(financial_line_items: list, market_cap: floa
     return {"score": final_score, "details": "; ".join(details)}
 
 
+@traceable(
+    name="generate_druckenmiller_output",
+    tags=["stanley_druckenmiller", "llm_generation", "macro_momentum"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def generate_druckenmiller_output(
     ticker: str,
     analysis_data: dict[str, any],

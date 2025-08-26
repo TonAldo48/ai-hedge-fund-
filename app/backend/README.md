@@ -53,8 +53,8 @@ python -m backend.run_api
 
 4. **Access the API**:
 - API: http://localhost:8000
-- Docs: http://localhost:8000/docs
-- Health: http://localhost:8000/health
+- Docs: https://aeeroooo-production.up.railway.app/docs
+- Health: https://aeeroooo-production.up.railway.app/health
 
 ### Railway Deployment
 
@@ -124,7 +124,7 @@ curl -H "Authorization: Bearer your-api-key" ...
 
 ## 📊 Supported Models
 
-- **OpenAI**: gpt-4o, gpt-4o-mini, gpt-4-turbo
+- **OpenAI**: gpt-4o-mini, gpt-4o-mini-mini, gpt-4o-mini-mini
 - **Anthropic**: claude-3-5-sonnet, claude-3-haiku
 - **DeepSeek**: deepseek-chat, deepseek-reasoner
 

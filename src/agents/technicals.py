@@ -10,6 +10,8 @@ import numpy as np
 
 from src.tools.api import get_prices, prices_to_df
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from datetime import datetime
 
 
 def safe_float(value, default=0.0):
@@ -45,9 +47,29 @@ def technical_analyst_agent(state: AgentState):
     start_date = data["start_date"]
     end_date = data["end_date"]
     tickers = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=start_date,
+            end_date=end_date,
+            selected_agents=["technical_analyst"]
+        )
 
     # Initialize analysis for each ticker
     technical_analysis = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("technical_analyst")
 
     for ticker in tickers:
         progress.update_status("technical_analyst_agent", ticker, "Analyzing price data")
@@ -81,14 +103,8 @@ def technical_analyst_agent(state: AgentState):
         progress.update_status("technical_analyst_agent", ticker, "Statistical analysis")
         stat_arb_signals = calculate_stat_arb_signals(prices_df)
 
-        # Combine all signals using a weighted ensemble approach
-        strategy_weights = {
-            "trend": 0.25,
-            "mean_reversion": 0.20,
-            "momentum": 0.25,
-            "volatility": 0.15,
-            "stat_arb": 0.15,
-        }
+        # Combine all signals using weights from registry
+        strategy_weights = current_weights  # Use weights from registry
 
         progress.update_status("technical_analyst_agent", ticker, "Combining signals")
         combined_signal = weighted_signal_combination(
@@ -101,6 +117,9 @@ def technical_analyst_agent(state: AgentState):
             },
             strategy_weights,
         )
+        
+        # Calculate total score for tracking (normalized confidence)
+        total_score = combined_signal["confidence"] * 10  # Convert to 0-10 scale
 
         # Generate detailed analysis report for this ticker
         technical_analysis[ticker] = {
@@ -133,7 +152,43 @@ def technical_analyst_agent(state: AgentState):
                     "metrics": normalize_pandas(stat_arb_signals["metrics"]),
                 },
             },
+            "weights_used": current_weights  # Store weights used
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="technical_analyst",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=combined_signal["signal"],
+            confidence=combined_signal["confidence"] * 100
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="technical_analyst",
+            ticker=ticker,
+            function_name="calculate_trend_signals",
+            score=trend_signals["confidence"] * 10,
+            max_score=10,
+            details=f"Trend signal: {trend_signals['signal']}",
+            function_data=trend_signals
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="technical_analyst",
+            ticker=ticker,
+            function_name="calculate_momentum_signals",
+            score=momentum_signals["confidence"] * 10,
+            max_score=10,
+            details=f"Momentum signal: {momentum_signals['signal']}",
+            function_data=momentum_signals
+        )
+        
         progress.update_status("technical_analyst_agent", ticker, "Done", analysis=json.dumps(technical_analysis, indent=4))
 
     # Create the technical analyst message

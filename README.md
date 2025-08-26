@@ -80,7 +80,7 @@ cp .env.example .env
 
 4. Set your API keys:
 ```bash
-# For running LLMs hosted by openai (gpt-4o, gpt-4o-mini, etc.)
+# For running LLMs hosted by openai (gpt-4o-mini, gpt-4o-mini-mini, etc.)
 # Get your OpenAI API key from https://platform.openai.com/
 OPENAI_API_KEY=your-openai-api-key
 
@@ -241,7 +241,7 @@ The hedge fund also includes a modern REST API with real-time streaming capabili
 poetry run python app/backend/run_api.py
 
 # API will be available at: http://localhost:8000
-# Interactive docs: http://localhost:8000/docs
+# Interactive docs: https://aeeroooo-production.up.railway.app/docs
 ```
 
 #### Key API Features
@@ -255,22 +255,22 @@ poetry run python app/backend/run_api.py
 
 **Health Check:**
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 **List Available Agents:**
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 
 **Run Analysis with Reasoning:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini", 
+    "model_name": "gpt-4o-mini-mini", 
     "model_provider": "OpenAI",
     "show_reasoning": true
   }'
@@ -278,13 +278,13 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Stream Real-time Analysis:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
     "tickers": ["AAPL", "MSFT"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI"
   }' \
   --no-buffer
@@ -332,7 +332,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI"
   }'
 ```

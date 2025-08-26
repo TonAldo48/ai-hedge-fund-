@@ -5,7 +5,7 @@
 poetry run python app/backend/run_api.py
 ```
 **API URL:** http://localhost:8000  
-**Docs:** http://localhost:8000/docs
+**Docs:** https://aeeroooo-production.up.railway.app/docs
 
 ---
 
@@ -13,20 +13,20 @@ poetry run python app/backend/run_api.py
 
 ### Health Check
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 ### Available Agents
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 **Popular agents:** `warren_buffett`, `peter_lynch`, `technical_analyst`, `michael_burry`
 
 ### Available Models
 ```bash
-curl http://localhost:8000/hedge-fund/models
+curl https://aeeroooo-production.up.railway.app/hedge-fund/models
 ```
-**Popular models:** `gpt-4o`, `gpt-4o-mini`, `claude-3-5-haiku-latest`
+**Popular models:** `gpt-4o-mini`, `gpt-4o-mini-mini`, `claude-3-5-haiku-latest`
 
 ---
 
@@ -34,24 +34,24 @@ curl http://localhost:8000/hedge-fund/models
 
 ### Single Stock + Single Agent
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI"
   }'
 ```
 
 ### Multi-Stock Portfolio
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL", "MSFT", "GOOGL"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 100000
   }'
@@ -63,13 +63,13 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 ### Basic Streaming
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["technical_analyst"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI"
   }' \
   --no-buffer
@@ -77,13 +77,13 @@ curl -X POST "http://localhost:8000/hedge-fund/run" \
 
 ### Enhanced Streaming (Multiple Agents)
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
     "tickers": ["AAPL", "MSFT", "NVDA"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "start_date": "2025-05-18",
@@ -101,7 +101,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run" \
 | `tickers` | `["AAPL", "MSFT"]` | Stock symbols |
 | `selected_agents` | `["warren_buffett", "technical_analyst"]` | Agent IDs |
 | `model_provider` | `"OpenAI"` | Case-sensitive! |
-| `model_name` | `"gpt-4o-mini"` | Check `/models` endpoint |
+| `model_name` | `"gpt-4o-mini-mini"` | Check `/models` endpoint |
 | `initial_cash` | `50000` | Portfolio starting cash |
 | `show_reasoning` | `true` | **NEW!** Detailed AI reasoning (like CLI `--show-reasoning`) |
 
@@ -182,12 +182,12 @@ data: {"type":"complete","data":{"decisions":{...}}}
 
 ### With Reasoning Flag
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "show_reasoning": true
   }'

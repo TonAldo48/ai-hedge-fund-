@@ -98,7 +98,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "show_reasoning": true
   }'
@@ -112,7 +112,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "show_reasoning": true
   }'
@@ -127,7 +127,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run" \
   -d '{
     "tickers": ["AAPL", "MSFT"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI"
   }' \
   --no-buffer
@@ -272,7 +272,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI"
   }'
 ```
@@ -301,7 +301,7 @@ curl -X POST "https://your-app-name.railway.app/hedge-fund/run-sync" \
 ### Cost Controls
 ```bash
 # Use cheaper models for testing
-"model_name": "gpt-4o-mini"  # Instead of "gpt-4o"
+"model_name": "gpt-4o-mini-mini"  # Instead of "gpt-4o-mini"
 
 # Limit analysis scope
 "tickers": ["AAPL"]  # Instead of ["AAPL", "MSFT", "NVDA", ...]

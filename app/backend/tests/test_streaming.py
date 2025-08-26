@@ -12,7 +12,7 @@ def test_streaming_endpoint():
     """Test the streaming endpoint with Server-Sent Events."""
     print("🚀 Testing AI Hedge Fund Streaming API...\n")
     
-    url = "http://localhost:8000/hedge-fund/run"
+    url = "https://aeeroooo-production.up.railway.app/hedge-fund/run"
     headers = {
         "Content-Type": "application/json",
         "Accept": "text/event-stream"
@@ -26,7 +26,7 @@ def test_streaming_endpoint():
     payload = {
         "tickers": ["AAPL", "MSFT", "NVDA"],
         "selected_agents": ["warren_buffett", "technical_analyst"],
-        "model_name": "gpt-4o-mini",
+        "model_name": "gpt-4o-mini-mini",
         "model_provider": "OpenAI",
         "initial_cash": 50000,
         "start_date": start_date.strftime("%Y-%m-%d"),

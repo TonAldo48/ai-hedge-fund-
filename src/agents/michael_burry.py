@@ -18,6 +18,9 @@ from src.tools.api import (
 )
 from src.utils.llm import call_llm
 from src.utils.progress import progress
+from src.utils.weight_manager import get_current_weights, track_agent_weights, weight_tracker
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
 
 __all__ = [
     "MichaelBurrySignal",
@@ -42,18 +45,58 @@ class MichaelBurrySignal(BaseModel):
 ###############################################################################
 
 
+@traceable(
+    name="michael_burry_agent",
+    tags=["hedge_fund", "deep_value", "michael_burry", "contrarian"],
+    metadata={"agent_type": "investment_analyst", "style": "deep_value_contrarian"}
+)
 def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine here)
     """Analyse stocks using Michael Burry's deep‑value, contrarian framework."""
 
     data = state["data"]
     end_date: str = data["end_date"]  # YYYY‑MM‑DD
     tickers: list[str] = data["tickers"]
+    
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["michael_burry"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="michael_burry",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "deep_value_contrarian",
+            "key_metrics": ["FCF_yield", "EV_EBIT", "debt_equity", "insider_activity", "contrarian_sentiment"]
+        }
+    )
 
     # We look one year back for insider trades / news flow
     start_date = (datetime.fromisoformat(end_date) - timedelta(days=365)).date().isoformat()
 
     analysis_data: dict[str, dict] = {}
     burry_analysis: dict[str, dict] = {}
+    
+    # Get current weights for this agent
+    current_weights = get_current_weights("michael_burry")
 
     for ticker in tickers:
         # ------------------------------------------------------------------
@@ -105,22 +148,24 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
         # ------------------------------------------------------------------
         # Aggregate score & derive preliminary signal
         # ------------------------------------------------------------------
+        # Normalize scores to 0-10 and apply weights from registry
+        value_score = value_analysis["score"] / value_analysis["max_score"] * 10
+        balance_sheet_score = balance_sheet_analysis["score"] / balance_sheet_analysis["max_score"] * 10
+        insider_score = insider_analysis["score"] / insider_analysis["max_score"] * 10
+        contrarian_score = contrarian_analysis["score"] / contrarian_analysis["max_score"] * 10
+        
         total_score = (
-            value_analysis["score"]
-            + balance_sheet_analysis["score"]
-            + insider_analysis["score"]
-            + contrarian_analysis["score"]
+            value_score * current_weights["value"] +
+            balance_sheet_score * current_weights["balance_sheet"] +
+            insider_score * current_weights["insider_activity"] +
+            contrarian_score * current_weights["contrarian_sentiment"]
         )
-        max_score = (
-            value_analysis["max_score"]
-            + balance_sheet_analysis["max_score"]
-            + insider_analysis["max_score"]
-            + contrarian_analysis["max_score"]
-        )
+        
+        max_score = 10
 
-        if total_score >= 0.7 * max_score:
+        if total_score >= 7.0:
             signal = "bullish"
-        elif total_score <= 0.3 * max_score:
+        elif total_score <= 4.0:
             signal = "bearish"
         else:
             signal = "neutral"
@@ -137,6 +182,7 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
             "insider_analysis": insider_analysis,
             "contrarian_analysis": contrarian_analysis,
             "market_cap": market_cap,
+            "weights_used": current_weights  # Store weights used
         }
 
         progress.update_status("michael_burry_agent", ticker, "Generating LLM output")
@@ -152,6 +198,40 @@ def michael_burry_agent(state: AgentState):  # noqa: C901  (complexity is fine h
             "confidence": burry_output.confidence,
             "reasoning": burry_output.reasoning,
         }
+        
+        # Track the weights used for this analysis
+        track_agent_weights(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            weights_used=current_weights,
+            total_score=total_score,
+            signal=signal,
+            confidence=burry_output.confidence
+        )
+        
+        # Record function-level analyses
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            function_name="analyze_value",
+            score=value_analysis["score"],
+            max_score=value_analysis["max_score"],
+            details=value_analysis["details"],
+            function_data=value_analysis
+        )
+        
+        weight_tracker.record_function_analysis(
+            session_id=session_id,
+            agent_name="michael_burry",
+            ticker=ticker,
+            function_name="analyze_balance_sheet",
+            score=balance_sheet_analysis["score"],
+            max_score=balance_sheet_analysis["max_score"],
+            details=balance_sheet_analysis["details"],
+            function_data=balance_sheet_analysis
+        )
 
         progress.update_status("michael_burry_agent", ticker, "Done", analysis=burry_output.reasoning)
 
@@ -182,6 +262,11 @@ def _latest_line_item(line_items: list):
 
 # ----- Value ----------------------------------------------------------------
 
+@traceable(
+    name="analyze_value",
+    tags=["michael_burry", "value_analysis", "deep_value"],
+    metadata={"analysis_type": "value_metrics"}
+)
 def _analyze_value(metrics, line_items, market_cap):
     """Free cash‑flow yield, EV/EBIT, other classic deep‑value metrics."""
 
@@ -230,6 +315,11 @@ def _analyze_value(metrics, line_items, market_cap):
 
 # ----- Balance sheet --------------------------------------------------------
 
+@traceable(
+    name="analyze_balance_sheet",
+    tags=["michael_burry", "balance_sheet", "financial_strength"],
+    metadata={"analysis_type": "balance_sheet"}
+)
 def _analyze_balance_sheet(metrics, line_items):
     """Leverage and liquidity checks."""
 
@@ -271,6 +361,11 @@ def _analyze_balance_sheet(metrics, line_items):
 
 # ----- Insider activity -----------------------------------------------------
 
+@traceable(
+    name="analyze_insider_activity",
+    tags=["michael_burry", "insider_trading", "catalyst"],
+    metadata={"analysis_type": "insider_activity"}
+)
 def _analyze_insider_activity(insider_trades):
     """Net insider buying over the last 12 months acts as a hard catalyst."""
 
@@ -296,6 +391,11 @@ def _analyze_insider_activity(insider_trades):
 
 # ----- Contrarian sentiment -------------------------------------------------
 
+@traceable(
+    name="analyze_contrarian_sentiment",
+    tags=["michael_burry", "contrarian", "sentiment_analysis"],
+    metadata={"analysis_type": "contrarian_sentiment"}
+)
 def _analyze_contrarian_sentiment(news):
     """Very rough gauge: a wall of recent negative headlines can be a *positive* for a contrarian."""
 
@@ -325,6 +425,11 @@ def _analyze_contrarian_sentiment(news):
 # LLM generation
 ###############################################################################
 
+@traceable(
+    name="generate_burry_output",
+    tags=["michael_burry", "llm_generation", "deep_value"],
+    metadata={"analysis_type": "signal_generation"}
+)
 def _generate_burry_output(
     ticker: str,
     analysis_data: dict,
@@ -345,20 +450,49 @@ def _generate_burry_output(
                 - Look for hard catalysts such as insider buying, buybacks, or asset sales
                 - Communicate in Burry's terse, data‑driven style
 
+                IMPORTANT: Format your reasoning using Markdown with the following structure:
+
+                ## Michael Burry's Deep Value Analysis
+
+                ### Key Valuation Metrics
+                - **FCF Yield**: X% (vs benchmark Y%)
+                - **EV/EBIT**: X.X (vs industry average)
+                - **Book Value**: Trading at X% of book value
+
+                ### Balance Sheet Strength
+                - **Debt-to-Equity**: X.X ratio
+                - **Current Ratio**: X.X
+                - **Cash Position**: Analysis of liquidity
+
+                ### Contrarian Opportunities
+                - **Market Sentiment**: Why the market is wrong
+                - **Hard Catalysts**: Specific events that could unlock value
+                - **Insider Activity**: Recent buying/selling patterns
+
+                ### Risk Assessment
+                - **Downside Protection**: What limits losses
+                - **Financial Leverage**: Debt concerns or lack thereof
+
+                ### Investment Decision
+                - **Signal**: Strong Buy/Buy/Hold/Sell with reasoning
+                - **Price Target**: Based on valuation metrics
+
+                Use **bold** for key metrics, *italics* for emphasis, and be terse like Burry.
+
                 When providing your reasoning, be thorough and specific by:
                 1. Start with the key metric(s) that drove your decision
-                2. Cite concrete numbers (e.g. "FCF yield 14.7%", "EV/EBIT 5.3")
+                2. Cite concrete numbers (e.g. "FCF yield **14.7%**", "EV/EBIT **5.3**")
                 3. Highlight risk factors and why they are acceptable (or not)
                 4. Mention relevant insider activity or contrarian opportunities
                 5. Use Burry's direct, number-focused communication style with minimal words
                 
-                For example, if bullish: "FCF yield 12.8%. EV/EBIT 6.2. Debt-to-equity 0.4. Net insider buying 25k shares. Market missing value due to overreaction to recent litigation. Strong buy."
-                For example, if bearish: "FCF yield only 2.1%. Debt-to-equity concerning at 2.3. Management diluting shareholders. Pass."
+                For example, if bullish: "**FCF yield 12.8%**. **EV/EBIT 6.2**. Debt-to-equity **0.4**. Net insider buying **25k shares**. Market missing value due to overreaction to recent litigation. **Strong buy**."
+                For example, if bearish: "FCF yield only **2.1%**. Debt-to-equity concerning at **2.3**. Management diluting shareholders. **Pass**."
                 """,
             ),
             (
                 "human",
-                """Based on the following data, create the investment signal as Michael Burry would:
+                """Based on the following data, create a Michael Burry-style trading signal:
 
                 Analysis Data for {ticker}:
                 {analysis_data}
@@ -367,7 +501,7 @@ def _generate_burry_output(
                 {{
                   "signal": "bullish" | "bearish" | "neutral",
                   "confidence": float between 0 and 100,
-                  "reasoning": "string"
+                  "reasoning": "string with markdown formatting"
                 }}
                 """,
             ),

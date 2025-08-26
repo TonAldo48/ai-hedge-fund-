@@ -13,14 +13,14 @@ This guide documents real interactions with the AI Hedge Fund API, showing the c
 poetry run python app/backend/run_api.py
 
 # Server runs at: http://localhost:8000
-# API Documentation: http://localhost:8000/docs
+# API Documentation: https://aeeroooo-production.up.railway.app/docs
 ```
 
 ### 2. Basic Health Check
 
 **Request:**
 ```bash
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 ```
 
 **Response:**
@@ -52,7 +52,7 @@ curl http://localhost:8000/health
 
 **Request:**
 ```bash
-curl http://localhost:8000/hedge-fund/agents
+curl https://aeeroooo-production.up.railway.app/hedge-fund/agents
 ```
 
 **Response:**
@@ -83,7 +83,7 @@ curl http://localhost:8000/hedge-fund/agents
 
 **Request:**
 ```bash
-curl http://localhost:8000/hedge-fund/models
+curl https://aeeroooo-production.up.railway.app/hedge-fund/models
 ```
 
 **Response (truncated):**
@@ -92,7 +92,7 @@ curl http://localhost:8000/hedge-fund/models
   "models": [
     {
       "display_name": "[openai] gpt 4o",
-      "model_name": "gpt-4o",
+      "model_name": "gpt-4o-mini",
       "provider": "OpenAI"
     },
     {
@@ -117,12 +117,12 @@ curl http://localhost:8000/hedge-fund/models
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000
   }'
@@ -171,7 +171,7 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
     "tickers": ["AAPL"],
     "start_date": "2025-02-27",
     "end_date": "2025-05-28",
-    "model": "OpenAI:gpt-4o",
+    "model": "OpenAI:gpt-4o-mini",
     "selected_agents": ["technical_analyst"]
   }
 }
@@ -181,12 +181,12 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL", "MSFT", "GOOGL"],
     "selected_agents": ["warren_buffett", "technical_analyst", "peter_lynch"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 100000,
     "start_date": "2024-01-01",
@@ -240,12 +240,12 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run-sync" \
   -H "Content-Type: application/json" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["warren_buffett"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "show_reasoning": true
@@ -283,13 +283,13 @@ curl -X POST "http://localhost:8000/hedge-fund/run-sync" \
 
 **Request:**
 ```bash
-curl -X POST "http://localhost:8000/hedge-fund/run" \
+curl -X POST "https://aeeroooo-production.up.railway.app/hedge-fund/run" \
   -H "Content-Type: application/json" \
   -H "Accept: text/event-stream" \
   -d '{
     "tickers": ["AAPL"],
     "selected_agents": ["technical_analyst"],
-    "model_name": "gpt-4o",
+    "model_name": "gpt-4o-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "start_date": "2025-05-18",
@@ -346,7 +346,7 @@ import json
 from datetime import datetime, timedelta
 
 # Setup
-url = "http://localhost:8000/hedge-fund/run"
+url = "https://aeeroooo-production.up.railway.app/hedge-fund/run"
 headers = {
     "Content-Type": "application/json",
     "Accept": "text/event-stream"
@@ -360,7 +360,7 @@ start_date = end_date - timedelta(days=10)
 payload = {
     "tickers": ["AAPL", "MSFT", "NVDA"],
     "selected_agents": ["warren_buffett", "technical_analyst"],
-    "model_name": "gpt-4o-mini",
+    "model_name": "gpt-4o-mini-mini",
     "model_provider": "OpenAI",
     "initial_cash": 50000,
     "start_date": start_date.strftime("%Y-%m-%d"),
@@ -426,7 +426,7 @@ Event 59: complete
 |-----------|------|----------|---------|-------------|
 | `tickers` | array[string] | Yes | - | Stock symbols (e.g., ["AAPL", "MSFT"]) |
 | `selected_agents` | array[string] | Yes | - | Agent IDs from `/agents` endpoint |
-| `model_name` | string | No | "gpt-4o" | LLM model name |
+| `model_name` | string | No | "gpt-4o-mini" | LLM model name |
 | `model_provider` | string | No | "OpenAI" | Model provider (OpenAI, Anthropic, etc.) |
 | `initial_cash` | float | No | 100000.0 | Starting cash amount |
 | `margin_requirement` | float | No | 0.0 | Margin requirement |
@@ -466,7 +466,7 @@ Use exact case-sensitive values:
 
 1. **404 on `/health`**
    - Check if API server is running
-   - Verify URL: `http://localhost:8000/health`
+   - Verify URL: `https://aeeroooo-production.up.railway.app/health`
 
 2. **"Response ended prematurely"**
    - Normal for quick analyses
@@ -485,10 +485,10 @@ Use exact case-sensitive values:
 
 ```bash
 # Check server status
-curl http://localhost:8000/
+curl https://aeeroooo-production.up.railway.app/
 
 # Test simple endpoint
-curl http://localhost:8000/health
+curl https://aeeroooo-production.up.railway.app/health
 
 # Validate JSON
 echo '{"test": "json"}' | python -m json.tool
@@ -527,7 +527,7 @@ Import the pre-configured collection:
     "technical_analyst",
     "michael_burry"
   ],
-  "model_name": "gpt-4o",
+  "model_name": "gpt-4o-mini",
   "model_provider": "OpenAI",
   "initial_cash": 200000,
   "margin_requirement": 10000
@@ -554,13 +554,13 @@ Import the pre-configured collection:
 ### For Faster Responses:
 - Use 1-2 tickers max
 - Select 1-2 agents
-- Use `gpt-4o-mini` or `claude-3-5-haiku-latest`
+- Use `gpt-4o-mini-mini` or `claude-3-5-haiku-latest`
 - Shorter date ranges (7-30 days)
 
 ### For Comprehensive Analysis:
 - Use 3-5 tickers
 - Mix agent types (value + growth + technical)
-- Use `gpt-4o` or `claude-sonnet-4`
+- Use `gpt-4o-mini` or `claude-sonnet-4`
 - Longer historical periods (3-12 months)
 
 ---

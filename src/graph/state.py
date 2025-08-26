@@ -16,6 +16,7 @@ class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     data: Annotated[dict[str, any], merge_dicts]
     metadata: Annotated[dict[str, any], merge_dicts]
+    session_id: str  # Add session_id for weight tracking
 
 
 def show_agent_reasoning(output, agent_name):

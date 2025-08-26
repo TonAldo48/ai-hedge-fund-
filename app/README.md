@@ -71,7 +71,7 @@ cd app && npm install && npm run setup
 **After running, you can access:**
 - Frontend (Web Interface): http://localhost:5173
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- API Documentation: https://aeeroooo-production.up.railway.app/docs
 
 ---
 
@@ -100,7 +100,7 @@ cp .env.example .env
 
 3. Edit the .env file to add your API keys:
 ```bash
-# For running LLMs hosted by openai (gpt-4o, gpt-4o-mini, etc.)
+# For running LLMs hosted by openai (gpt-4o-mini, gpt-4o-mini-mini, etc.)
 OPENAI_API_KEY=your-openai-api-key
 
 # For running LLMs hosted by groq (deepseek, llama3, etc.)
@@ -155,7 +155,7 @@ npm run dev
 You can now access:
 - Frontend application: http://localhost:5173
 - Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- API Documentation: https://aeeroooo-production.up.railway.app/docs
 
 ## Detailed Documentation
 

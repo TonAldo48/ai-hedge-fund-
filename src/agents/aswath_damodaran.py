@@ -15,6 +15,10 @@ from src.tools.api import (
 )
 from src.utils.llm import call_llm
 from src.utils.progress import progress
+from langsmith import traceable
+from src.utils.tracing import create_agent_session_metadata
+from src.utils.weight_manager import weight_tracker
+from datetime import datetime
 
 
 class AswathDamodaranSignal(BaseModel):
@@ -23,6 +27,11 @@ class AswathDamodaranSignal(BaseModel):
     reasoning: str
 
 
+@traceable(
+    name="aswath_damodaran_agent",
+    tags=["hedge_fund", "academic_valuation", "aswath_damodaran", "dcf_analysis"],
+    metadata={"agent_type": "investment_analyst", "style": "academic_valuation"}
+)
 def aswath_damodaran_agent(state: AgentState):
     """
     Analyze US equities through Aswath Damodaran’s intrinsic‑value lens:
@@ -35,6 +44,38 @@ def aswath_damodaran_agent(state: AgentState):
     data      = state["data"]
     end_date  = data["end_date"]
     tickers   = data["tickers"]
+
+    # Get or create session ID
+    session_id = state.get("session_id")
+    if not session_id:
+        # Generate a session ID if not provided
+        session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        state["session_id"] = session_id
+        
+        # Create session in weight tracker
+        weight_tracker.create_session(
+            session_id=session_id,
+            session_type="hedge_fund",
+            tickers=tickers,
+            start_date=data.get("start_date", end_date),
+            end_date=end_date,
+            selected_agents=["aswath_damodaran"]
+        )
+
+    # Create session metadata for tracing
+    model_name = state["metadata"]["model_name"]
+    model_provider = state["metadata"]["model_provider"]
+    session_metadata = create_agent_session_metadata(
+        session_id=session_id,
+        agent_name="aswath_damodaran",
+        tickers=tickers,
+        model_name=model_name,
+        model_provider=model_provider,
+        metadata={
+            "investment_style": "academic_valuation",
+            "key_metrics": ["growth_reinvestment", "risk_profile", "intrinsic_dcf", "relative_valuation"]
+        }
+    )
 
     analysis_data: dict[str, dict] = {}
     damodaran_signals: dict[str, dict] = {}
@@ -139,6 +180,11 @@ def aswath_damodaran_agent(state: AgentState):
 # ────────────────────────────────────────────────────────────────────────────────
 # Helper analyses
 # ────────────────────────────────────────────────────────────────────────────────
+@traceable(
+    name="analyze_growth_and_reinvestment",
+    tags=["aswath_damodaran", "growth_analysis", "reinvestment_analysis"],
+    metadata={"analysis_type": "growth_reinvestment"}
+)
 def analyze_growth_and_reinvestment(metrics: list, line_items: list) -> dict[str, any]:
     """
     Growth score (0‑4):
@@ -189,6 +235,11 @@ def analyze_growth_and_reinvestment(metrics: list, line_items: list) -> dict[str
     return {"score": score, "max_score": max_score, "details": "; ".join(details), "metrics": latest.model_dump()}
 
 
+@traceable(
+    name="analyze_risk_profile",
+    tags=["aswath_damodaran", "risk_analysis", "beta_analysis"],
+    metadata={"analysis_type": "risk_profile"}
+)
 def analyze_risk_profile(metrics: list, line_items: list) -> dict[str, any]:
     """
     Risk score (0‑3):
@@ -250,6 +301,11 @@ def analyze_risk_profile(metrics: list, line_items: list) -> dict[str, any]:
     }
 
 
+@traceable(
+    name="analyze_relative_valuation",
+    tags=["aswath_damodaran", "relative_valuation", "pe_analysis"],
+    metadata={"analysis_type": "relative_valuation"}
+)
 def analyze_relative_valuation(metrics: list) -> dict[str, any]:
     """
     Simple PE check vs. historical median (proxy since sector comps unavailable):
@@ -281,6 +337,11 @@ def analyze_relative_valuation(metrics: list) -> dict[str, any]:
 # ────────────────────────────────────────────────────────────────────────────────
 # Intrinsic value via FCFF DCF (Damodaran style)
 # ────────────────────────────────────────────────────────────────────────────────
+@traceable(
+    name="calculate_intrinsic_value_dcf",
+    tags=["aswath_damodaran", "dcf_analysis", "intrinsic_value"],
+    metadata={"analysis_type": "intrinsic_dcf"}
+)
 def calculate_intrinsic_value_dcf(metrics: list, line_items: list, risk_analysis: dict) -> dict[str, any]:
     """
     FCFF DCF with:
@@ -346,6 +407,11 @@ def calculate_intrinsic_value_dcf(metrics: list, line_items: list, risk_analysis
     }
 
 
+@traceable(
+    name="estimate_cost_of_equity",
+    tags=["aswath_damodaran", "capm", "cost_of_equity"],
+    metadata={"analysis_type": "capm_calculation"}
+)
 def estimate_cost_of_equity(beta: float | None) -> float:
     """CAPM: r_e = r_f + β × ERP (use Damodaran’s long‑term averages)."""
     risk_free = 0.04          # 10‑yr US Treasury proxy
@@ -357,6 +423,11 @@ def estimate_cost_of_equity(beta: float | None) -> float:
 # ────────────────────────────────────────────────────────────────────────────────
 # LLM generation
 # ────────────────────────────────────────────────────────────────────────────────
+@traceable(
+    name="generate_damodaran_output",
+    tags=["aswath_damodaran", "output_generation", "llm"],
+    metadata={"output_type": "investment_signal"}
+)
 def generate_damodaran_output(
     ticker: str,
     analysis_data: dict[str, any],

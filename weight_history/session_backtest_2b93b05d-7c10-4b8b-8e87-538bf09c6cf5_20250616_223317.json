@@ -1,0 +1,45 @@
+{
+  "session_id": "backtest_2b93b05d-7c10-4b8b-8e87-538bf09c6cf5_20250616_223317",
+  "session_type": "backtest",
+  "tickers": [
+    "AAPL",
+    "MSFT",
+    "TSLA"
+  ],
+  "start_date": "2024-12-01",
+  "end_date": "2024-12-10",
+  "selected_agents": [
+    "warren_buffett",
+    "peter_lynch",
+    "michael_burry",
+    "cathie_wood"
+  ],
+  "session_weights": {
+    "warren_buffett": {
+      "business_quality": 0.3,
+      "management": 0.25,
+      "financial_strength": 0.25,
+      "valuation": 0.2
+    },
+    "peter_lynch": {
+      "growth": 0.3,
+      "valuation": 0.25,
+      "fundamentals": 0.2,
+      "sentiment": 0.15,
+      "insider_activity": 0.1
+    },
+    "michael_burry": {
+      "value": 0.4,
+      "balance_sheet": 0.3,
+      "insider_activity": 0.2,
+      "contrarian_sentiment": 0.1
+    },
+    "cathie_wood": {
+      "disruptive_potential": 0.35,
+      "revenue_growth": 0.25,
+      "market_opportunity": 0.2,
+      "innovation_score": 0.2
+    }
+  },
+  "created_at": "2025-06-16T22:33:17.959079"
+}
